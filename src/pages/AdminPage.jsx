@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useAnalytics } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -85,6 +85,7 @@ export default function AdminPage() {
               { id: 'profile',   label: '👤 Profile' },
               { id: 'socials',   label: '📲 Socials' },
               { id: 'links',     label: '🔗 Links' },
+              { id: 'products',  label: '🛍️ Products' },
               { id: 'pinned',    label: '📌 Pinned' },
               { id: 'analytics', label: '📊 Analytics' },
             ].map(item => (
@@ -117,6 +118,7 @@ export default function AdminPage() {
             {tab === 'profile'   && 'Profile Settings'}
             {tab === 'socials'   && 'Social Links'}
             {tab === 'links'     && 'Link Sections'}
+            {tab === 'products'  && 'Gumroad Products'}
             {tab === 'pinned'    && 'Pinned Link'}
             {tab === 'analytics' && 'Click Analytics'}
           </div>
@@ -132,6 +134,9 @@ export default function AdminPage() {
           )}
           {tab === 'links' && (
             <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />
+          )}
+          {tab === 'products' && (
+            <ProductsTab onSaved={showSaved} />
           )}
           {tab === 'pinned' && (
             <PinnedTab onSaved={showSaved} />
@@ -453,6 +458,137 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
 
       </div>
       <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={onRemove}>✕</button>
+    </div>
+  )
+}
+
+// ─── PRODUCTS TAB ────────────────────────────────────────────────────────────
+function ProductsTab({ onSaved }) {
+  const { products, loading, save } = useProducts()
+  const [items, setItems] = useState(null)
+  const sensors = useSensors(useSensor(PointerSensor))
+
+  React.useEffect(() => {
+    if (products && !items) setItems(products.items || [])
+  }, [products])
+
+  if (loading || !items) return <Loader />
+
+  const saveAll = async () => {
+    await save({ items })
+    onSaved()
+  }
+
+  const add = () => setItems(prev => [...prev, {
+    id: uid(), name: '', description: '', price: 'Free',
+    url: '', thumbnailUrl: '', visible: true,
+  }])
+
+  const remove = (id) => setItems(prev => prev.filter(p => p.id !== id))
+  const update = (id, k, v) => setItems(prev => prev.map(p => p.id === id ? { ...p, [k]: v } : p))
+  const toggle = (id) => setItems(prev => prev.map(p => p.id === id ? { ...p, visible: !p.visible } : p))
+
+  const onDragEnd = ({ active, over }) => {
+    if (active.id !== over?.id) {
+      setItems(prev => {
+        const oldIdx = prev.findIndex(p => p.id === active.id)
+        const newIdx = prev.findIndex(p => p.id === over.id)
+        return arrayMove(prev, oldIdx, newIdx)
+      })
+    }
+  }
+
+  return (
+    <div style={s.tabBody}>
+      <div style={s.tabInfo}>Drag to reorder. Each product shows as a card on your public page above your link sections.</div>
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={items.map(p => p.id)} strategy={verticalListSortingStrategy}>
+          {items.map(product => (
+            <SortableProductRow
+              key={product.id}
+              product={product}
+              update={(k, v) => update(product.id, k, v)}
+              toggle={() => toggle(product.id)}
+              remove={() => remove(product.id)}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+
+      <button style={s.addBtn} onClick={add}>+ Add Product</button>
+      <SaveBtn onClick={saveAll} />
+    </div>
+  )
+}
+
+function SortableProductRow({ product, update, toggle, remove }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: product.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+
+  return (
+    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', gap: 0 }}>
+      {/* Header row: drag + name preview + toggle + delete */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <span {...attributes} {...listeners} style={s.drag}>⠿</span>
+
+        {/* Thumbnail preview */}
+        <div style={{
+          width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+          background: 'var(--surface2)', border: '1px solid var(--border)',
+          overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {product.thumbnailUrl
+            ? <img src={product.thumbnailUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
+            : <span style={{ fontSize: 14, color: 'var(--muted)' }}>{product.name?.[0] || '🛍'}</span>
+          }
+        </div>
+
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: product.name ? 'var(--text)' : 'var(--muted)' }}>
+          {product.name || 'New Product'}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>{product.price || 'Free'}</span>
+        <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={toggle}>
+          {product.visible ? '👁' : '🚫'}
+        </button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={remove}>✕</button>
+      </div>
+
+      {/* Fields */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 0 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            style={{ ...s.input, flex: 1 }}
+            placeholder="Product name"
+            value={product.name}
+            onChange={e => update('name', e.target.value)}
+          />
+          <input
+            style={{ ...s.input, width: 100 }}
+            placeholder="Price (Free / ₱299)"
+            value={product.price}
+            onChange={e => update('price', e.target.value)}
+          />
+        </div>
+        <input
+          style={s.input}
+          placeholder="Short description (one line)"
+          value={product.description}
+          onChange={e => update('description', e.target.value)}
+        />
+        <input
+          style={s.input}
+          placeholder="Gumroad URL (https://...gumroad.com/l/...)"
+          value={product.url}
+          onChange={e => update('url', e.target.value)}
+        />
+        <input
+          style={s.input}
+          placeholder="Thumbnail image URL (optional)"
+          value={product.thumbnailUrl}
+          onChange={e => update('thumbnailUrl', e.target.value)}
+        />
+      </div>
     </div>
   )
 }

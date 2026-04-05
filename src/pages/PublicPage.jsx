@@ -1,5 +1,5 @@
 import React from 'react'
-import { useProfile, useLinks, usePinned, logClick } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, logClick } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
 
@@ -21,8 +21,9 @@ export default function PublicPage() {
   const { profile, loading: pl } = useProfile()
   const { data, loading: ll } = useLinks()
   const { pinned, loading: pinnedLoading } = usePinned()
+  const { products, loading: productsLoading } = useProducts()
 
-  if (pl || ll || pinnedLoading) return (
+  if (pl || ll || pinnedLoading || productsLoading) return (
     <div className={styles.loadWrap}>
       <div className={styles.loadDot} />
     </div>
@@ -93,6 +94,44 @@ export default function PublicPage() {
             </a>
           </div>
         )}
+
+        {/* PRODUCTS */}
+        {(() => {
+          const visibleProducts = products?.items?.filter(p => p.visible) || []
+          if (!visibleProducts.length) return null
+          return (
+            <div className={styles.productsSection}>
+              <div className={styles.sectionLabel}>🛍️ My Products</div>
+              <div className={styles.productsStack}>
+                {visibleProducts.map(product => (
+                  <a
+                    key={product.id}
+                    href={product.url}
+                    target="_blank"
+                    rel="noopener"
+                    className={styles.productCard}
+                    onClick={() => logClick(product.id, product.name, 'products')}
+                  >
+                    <div className={styles.productThumb}>
+                      {product.thumbnailUrl
+                        ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                        : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                      }
+                    </div>
+                    <div className={styles.productInfo}>
+                      <div className={styles.productName}>{product.name}</div>
+                      <div className={styles.productDesc}>{product.description}</div>
+                    </div>
+                    <div className={styles.productMeta}>
+                      <div className={styles.productPrice}>{product.price || 'Free'}</div>
+                      <div className={styles.productBtn}>Get it →</div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* SECTIONS */}
         {visibleSections.map(section => {
