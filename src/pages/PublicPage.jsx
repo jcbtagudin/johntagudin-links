@@ -1,5 +1,5 @@
 import React from 'react'
-import { useProfile, useLinks } from '../hooks/useData'
+import { useProfile, useLinks, logClick } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
 
@@ -7,6 +7,14 @@ const BADGE_MAP = {
   free: { label: 'Free', cls: 'badgeFree' },
   new:  { label: 'New',  cls: 'badgeNew'  },
   hot:  { label: '🔥 Hot', cls: 'badgeHot' },
+}
+
+// Returns false if the link is outside its scheduled window
+function isLinkLive(link) {
+  const now = new Date()
+  if (link.startDate && new Date(link.startDate) > now) return false
+  if (link.endDate && new Date(link.endDate) < now) return false
+  return true
 }
 
 export default function PublicPage() {
@@ -61,7 +69,7 @@ export default function PublicPage() {
 
         {/* SECTIONS */}
         {visibleSections.map(section => {
-          const visibleLinks = section.links?.filter(l => l.visible) || []
+          const visibleLinks = section.links?.filter(l => l.visible && isLinkLive(l)) || []
           if (!visibleLinks.length) return null
           return (
             <div key={section.id} className={styles.section}>
@@ -76,6 +84,7 @@ export default function PublicPage() {
                       target="_blank"
                       rel="noopener"
                       className={`${styles.card} ${link.featured ? styles.featured : ''}`}
+                      onClick={() => logClick(link.id, link.title, section.id)}
                     >
                       <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''}`}>
                         {link.icon}
