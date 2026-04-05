@@ -1,6 +1,17 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/tiktok",   "destination": "/?ref=tiktok",    "permanent": false },
+    { "source": "/fb",       "destination": "/?ref=facebook",  "permanent": false },
+    { "source": "/ig",       "destination": "/?ref=instagram", "permanent": false },
+    { "source": "/yt",       "destination": "/?ref=youtube",   "permanent": false },
+    { "source": "/twitter",  "destination": "/?ref=twitter",   "permanent": false },
+    { "source": "/x",        "destination": "/?ref=twitter",   "permanent": false },
+    { "source": "/threads",  "destination": "/?ref=threads",   "permanent": false },
+    { "source": "/linkedin", "destination": "/?ref=linkedin",  "permanent": false },
+    { "source": "/email",    "destination": "/?ref=email",     "permanent": false }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)",     "destination": "/index.html" }
