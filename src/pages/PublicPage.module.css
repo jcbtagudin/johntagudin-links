@@ -161,10 +161,10 @@
 }
 
 .pill:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--border2);
+  color: var(--text);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74,124,64,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .videoCard {
@@ -184,7 +184,7 @@
 }
 
 .videoCard:hover {
-  border-color: rgba(74,124,64,0.3);
+  border-color: var(--border2);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
@@ -232,7 +232,7 @@
   white-space: nowrap;
 }
 
-.videoCard:hover .videoWatch { color: var(--accent); }
+.videoCard:hover .videoWatch { color: var(--text2); }
 
 .productsSection {
   margin-bottom: 28px;
@@ -256,7 +256,7 @@
 }
 
 .productCard:hover {
-  border-color: rgba(74,124,64,0.25);
+  border-color: var(--border2);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
@@ -336,7 +336,7 @@
   transition: color 0.2s;
 }
 
-.productCard:hover .productBtn { color: var(--accent); }
+.productCard:hover .productBtn { color: var(--text2); }
 
 .productsGrid {
   display: grid;
@@ -358,7 +358,7 @@
 }
 
 .productCardGrid:hover {
-  border-color: rgba(74,124,64,0.25);
+  border-color: var(--border2);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
@@ -411,7 +411,7 @@
   margin-top: 4px;
 }
 
-.productCardGrid:hover .productBtn { color: var(--accent); }
+.productCardGrid:hover .productBtn { color: var(--text2); }
 
 .showMoreBtn {
   display: block;
@@ -430,8 +430,8 @@
 }
 
 .showMoreBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--border2);
+  color: var(--text2);
 }
 
 .pinnedSection {
@@ -497,7 +497,7 @@
 }
 
 .card:hover {
-  border-color: rgba(74,124,64,0.25);
+  border-color: var(--border2);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
@@ -586,7 +586,7 @@
 
 .card:hover .arrow {
   transform: translateX(3px);
-  color: var(--accent);
+  color: var(--text2);
 }
 
 .footer { text-align: center; padding-top: 16px; margin-bottom: 8px; }
@@ -601,7 +601,7 @@
   transition: color 0.2s;
 }
 
-.footerEmail:hover { color: var(--accent); }
+.footerEmail:hover { color: var(--text2); }
 
 .adminLink {
   display: block;
