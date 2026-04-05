@@ -20,6 +20,7 @@ const DEFAULT_PROFILE = {
   email: 'john@johntagudin.com',
   footerText: 'For brand collabs & partnerships',
   status: 'Creating',
+  showLatestVideo: true,
 }
 
 const DEFAULT_LINKS = {
