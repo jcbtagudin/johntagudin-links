@@ -214,6 +214,32 @@ function ProfileTab({ profile, update, onSaved }) {
           </button>
         </div>
 
+        {/* Inline preview toggle */}
+        {form.showLatestVideo !== false && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Inline preview</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Play video directly on your page instead of linking to YouTube</div>
+            </div>
+            <button
+              onClick={() => set('latestVideoInline', !form.latestVideoInline)}
+              style={{
+                width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer',
+                background: form.latestVideoInline ? 'var(--accent)' : 'var(--surface2)',
+                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3,
+                left: form.latestVideoInline ? 20 : 3,
+                width: 16, height: 16, borderRadius: '50%',
+                background: form.latestVideoInline ? '#000' : 'var(--muted)',
+                transition: 'left 0.2s',
+              }} />
+            </button>
+          </div>
+        )}
+
         {/* Video preview */}
         {video ? (
           <div style={{

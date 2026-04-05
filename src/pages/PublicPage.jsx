@@ -92,7 +92,7 @@ export default function PublicPage() {
         )}
 
         {/* LATEST VIDEO */}
-        {profile.showLatestVideo !== false && <LatestVideoCard />}
+        {profile.showLatestVideo !== false && <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />}
 
         {/* PINNED LINK */}
         {pinned?.enabled && pinned?.url && (
@@ -225,29 +225,89 @@ function useLatestVideo() {
   return video
 }
 
-function LatestVideoCard() {
+function LatestVideoCard({ inlinePreview }) {
   const video = useLatestVideo()
+  const [playing, setPlaying] = useState(false)
   if (!video) return null
+
+  // ── Default mode: link straight to YouTube ────────────────────────────────
+  if (!inlinePreview) {
+    return (
+      <a href={video.url} target="_blank" rel="noopener" className={styles.videoCard}>
+        <img
+          src={video.thumbnail}
+          alt={video.title}
+          className={styles.videoThumb}
+          onError={e => e.target.style.display = 'none'}
+        />
+        <div className={styles.videoInfo}>
+          <div className={styles.videoLabel}>▶ Latest Video</div>
+          <div className={styles.videoTitle}>{video.title}</div>
+          <div className={styles.videoMeta}>{timeAgo(video.publishedAt)}</div>
+        </div>
+        <div className={styles.videoWatch}>Watch now →</div>
+      </a>
+    )
+  }
+
+  // ── Inline preview mode ───────────────────────────────────────────────────
+  if (playing) {
+    return (
+      <div className={`${styles.videoCard} ${styles.videoCardPlaying}`}>
+        {/* 16:9 embedded player */}
+        <div className={styles.videoEmbedWrap}>
+          <iframe
+            className={styles.videoEmbed}
+            src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&rel=0`}
+            title={video.title}
+            allow="autoplay; encrypted-media; fullscreen"
+            allowFullScreen
+          />
+        </div>
+        {/* Footer row */}
+        <div className={styles.videoEmbedFooter}>
+          <div className={styles.videoInfo}>
+            <div className={styles.videoLabel}>▶ Latest Video</div>
+            <div className={styles.videoTitle}>{video.title}</div>
+          </div>
+          <div className={styles.videoEmbedActions}>
+            <a href={video.url} target="_blank" rel="noopener" className={styles.videoWatch}>
+              YouTube ↗
+            </a>
+            <button className={styles.videoClose} onClick={() => setPlaying(false)}>
+              ✕ Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <a
-      href={video.url}
-      target="_blank"
-      rel="noopener"
-      className={styles.videoCard}
-    >
-      <img
-        src={video.thumbnail}
-        alt={video.title}
-        className={styles.videoThumb}
-        onError={e => e.target.style.display = 'none'}
-      />
+    <div className={`${styles.videoCard} ${styles.videoCardClickable}`}>
+      {/* Thumbnail with play overlay */}
+      <div className={styles.videoThumbWrap} onClick={() => setPlaying(true)}>
+        <img
+          src={video.thumbnail}
+          alt={video.title}
+          className={styles.videoThumb}
+          onError={e => e.target.style.display = 'none'}
+        />
+        <div className={styles.videoPlayOverlay}>
+          <div className={styles.videoPlayBtn}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M3 2L12 7L3 12V2Z" fill="currentColor"/>
+            </svg>
+          </div>
+        </div>
+      </div>
       <div className={styles.videoInfo}>
         <div className={styles.videoLabel}>▶ Latest Video</div>
         <div className={styles.videoTitle}>{video.title}</div>
         <div className={styles.videoMeta}>{timeAgo(video.publishedAt)}</div>
       </div>
-      <div className={styles.videoWatch}>Watch now →</div>
-    </a>
+      <div className={styles.videoWatch} onClick={() => setPlaying(true)}>Play ▶</div>
+    </div>
   )
 }
 
