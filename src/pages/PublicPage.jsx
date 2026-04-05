@@ -1,5 +1,5 @@
 import React from 'react'
-import { useProfile, useLinks } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, logClick } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
 
@@ -12,8 +12,9 @@ const BADGE_MAP = {
 export default function PublicPage() {
   const { profile, loading: pl } = useProfile()
   const { data, loading: ll } = useLinks()
+  const { pinned, loading: pinnedLoading } = usePinned()
 
-  if (pl || ll) return (
+  if (pl || ll || pinnedLoading) return (
     <div className={styles.loadWrap}>
       <div className={styles.loadDot} />
     </div>
@@ -56,6 +57,32 @@ export default function PublicPage() {
                 {s.label}
               </a>
             ))}
+          </div>
+        )}
+
+        {/* PINNED LINK */}
+        {pinned?.enabled && pinned?.url && (
+          <div className={styles.pinnedSection}>
+            <div className={styles.pinnedLabel}>📌 Pinned</div>
+            <a
+              href={pinned.url}
+              target="_blank"
+              rel="noopener"
+              className={`${styles.card} ${styles.pinnedCard}`}
+              onClick={() => logClick('pinned', pinned.title, 'pinned')}
+            >
+              <div className={`${styles.icon} ${styles.iconAccent}`}>{pinned.icon}</div>
+              <div className={styles.cardText}>
+                <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
+                <div className={styles.cardSub}>{pinned.subtitle}</div>
+              </div>
+              {BADGE_MAP[pinned.badge] && (
+                <span className={`${styles.badge} ${styles[BADGE_MAP[pinned.badge].cls]}`}>
+                  {BADGE_MAP[pinned.badge].label}
+                </span>
+              )}
+              <Arrow />
+            </a>
           </div>
         )}
 

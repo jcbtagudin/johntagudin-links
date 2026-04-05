@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import {
-  doc, onSnapshot, setDoc, updateDoc, getDoc
+  doc, onSnapshot, setDoc, updateDoc, getDoc,
+  collection, addDoc, serverTimestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
 const PROFILE_DOC = 'config/profile'
-const LINKS_DOC = 'config/links'
+const LINKS_DOC   = 'config/links'
+const PINNED_DOC  = 'config/pinned'
 
 // Default data seeded on first run
 const DEFAULT_PROFILE = {
@@ -81,6 +83,58 @@ export function useProfile() {
   }
 
   return { profile, loading, update }
+}
+
+// ─── PINNED LINK ─────────────────────────────────────────────────────────────
+
+const DEFAULT_PINNED = {
+  enabled: false,
+  icon: '📌',
+  title: '',
+  subtitle: '',
+  url: '',
+  badge: '',
+}
+
+export function usePinned() {
+  const [pinned, setPinned] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const ref = doc(db, ...PINNED_DOC.split('/'))
+    const unsub = onSnapshot(ref, async (snap) => {
+      if (snap.exists()) {
+        setPinned(snap.data())
+      } else {
+        await setDoc(ref, DEFAULT_PINNED)
+        setPinned(DEFAULT_PINNED)
+      }
+      setLoading(false)
+    })
+    return unsub
+  }, [])
+
+  const save = async (data) => {
+    const ref = doc(db, ...PINNED_DOC.split('/'))
+    await setDoc(ref, data)
+  }
+
+  return { pinned, loading, save }
+}
+
+// ─── CLICK ANALYTICS ─────────────────────────────────────────────────────────
+
+export async function logClick(linkId, linkTitle, sectionId) {
+  try {
+    await addDoc(collection(db, 'clicks'), {
+      linkId,
+      linkTitle,
+      sectionId,
+      timestamp: serverTimestamp(),
+    })
+  } catch (_) {
+    // Silently fail — analytics should never break the public page
+  }
 }
 
 export function useLinks() {

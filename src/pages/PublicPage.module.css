@@ -160,6 +160,38 @@
   transform: translateY(-1px);
 }
 
+/* PINNED */
+.pinnedSection {
+  margin-bottom: 28px;
+  animation: fadeUp 0.5s 0.15s ease both;
+}
+
+.pinnedLabel {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+
+.pinnedCard {
+  background: linear-gradient(135deg, #141a0a 0%, #0f1208 100%);
+  border-color: rgba(232,255,87,0.4);
+  box-shadow: 0 0 0 1px rgba(232,255,87,0.08), 0 8px 32px rgba(232,255,87,0.08);
+}
+
+.pinnedCard:hover {
+  border-color: rgba(232,255,87,0.65);
+  box-shadow: 0 0 0 1px rgba(232,255,87,0.15), 0 12px 40px rgba(232,255,87,0.14);
+}
+
+.pinnedTitle {
+  color: var(--accent);
+}
+
 /* SECTIONS */
 .section {
   margin-bottom: 28px;

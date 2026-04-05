@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks } from '../hooks/useData'
+import { useProfile, useLinks, usePinned } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -48,6 +48,7 @@ export default function AdminPage() {
               { id: 'profile', label: '👤 Profile' },
               { id: 'socials', label: '📲 Socials' },
               { id: 'links',   label: '🔗 Links' },
+              { id: 'pinned',  label: '📌 Pinned' },
             ].map(item => (
               <button
                 key={item.id}
@@ -77,7 +78,8 @@ export default function AdminPage() {
           <div style={s.headerTitle}>
             {tab === 'profile' && 'Profile Settings'}
             {tab === 'socials' && 'Social Links'}
-            {tab === 'links' && 'Link Sections'}
+            {tab === 'links'   && 'Link Sections'}
+            {tab === 'pinned'  && 'Pinned Link'}
           </div>
           {saved && <div style={s.savedBadge}>✓ Saved</div>}
         </div>
@@ -91,6 +93,9 @@ export default function AdminPage() {
           )}
           {tab === 'links' && (
             <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />
+          )}
+          {tab === 'pinned' && (
+            <PinnedTab onSaved={showSaved} />
           )}
         </div>
       </main>
@@ -371,6 +376,178 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
         </div>
       </div>
       <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={onRemove}>✕</button>
+    </div>
+  )
+}
+
+// ─── PINNED TAB ──────────────────────────────────────────────────────────────
+function PinnedTab({ onSaved }) {
+  const { pinned, loading, save } = usePinned()
+  const [form, setForm] = useState(null)
+
+  // Sync once pinned data arrives
+  React.useEffect(() => {
+    if (pinned && !form) setForm({ ...pinned })
+  }, [pinned])
+
+  if (loading || !form) return <Loader />
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleSave = async () => {
+    await save(form)
+    onSaved()
+  }
+
+  const BADGE_OPTIONS = [
+    { value: '',     label: 'No badge' },
+    { value: 'free', label: 'Free' },
+    { value: 'new',  label: 'New' },
+    { value: 'hot',  label: '🔥 Hot' },
+  ]
+
+  return (
+    <div style={{ ...s.tabBody, maxWidth: 640 }}>
+
+      {/* Toggle row */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'var(--surface)', border: `1px solid ${form.enabled ? 'rgba(232,255,87,0.3)' : 'var(--border)'}`,
+        borderRadius: 12, padding: '16px 20px',
+        transition: 'border-color 0.2s',
+      }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
+            Show pinned link on public page
+          </div>
+          <div style={{ fontSize: 12, color: form.enabled ? 'var(--accent)' : 'var(--muted)' }}>
+            {form.enabled ? '● Live — visible to everyone' : '○ Hidden — not showing'}
+          </div>
+        </div>
+        {/* Toggle switch */}
+        <div
+          onClick={() => set('enabled', !form.enabled)}
+          style={{
+            width: 50, height: 28, borderRadius: 100, cursor: 'pointer', position: 'relative',
+            background: form.enabled ? 'var(--accent)' : 'var(--surface2)',
+            border: `1px solid ${form.enabled ? 'var(--accent)' : 'var(--border)'}`,
+            transition: 'background 0.2s, border-color 0.2s',
+            flexShrink: 0,
+          }}
+        >
+          <div style={{
+            position: 'absolute', top: 4, left: form.enabled ? 26 : 4,
+            width: 18, height: 18, borderRadius: '50%',
+            background: form.enabled ? '#0a0a0a' : 'var(--muted)',
+            transition: 'left 0.2s',
+          }} />
+        </div>
+      </div>
+
+      {/* Fields */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+        <div style={s.field}>
+          <label style={s.label}>ICON</label>
+          <input
+            style={{ ...s.input, width: 64, textAlign: 'center', fontSize: 22, padding: '8px' }}
+            value={form.icon}
+            onChange={e => set('icon', e.target.value)}
+            placeholder="📌"
+          />
+        </div>
+        <div style={{ ...s.field, flex: 1 }}>
+          <label style={s.label}>TITLE</label>
+          <input style={s.input} value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. New YouTube Video" />
+        </div>
+        <div style={s.field}>
+          <label style={s.label}>BADGE</label>
+          <select style={s.select} value={form.badge} onChange={e => set('badge', e.target.value)}>
+            {BADGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <Field label="SUBTITLE" value={form.subtitle} onChange={v => set('subtitle', v)} placeholder="e.g. Watch my latest video on AI tools" />
+      <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />
+
+      {/* Live preview */}
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.3, marginBottom: 10 }}>
+          LIVE PREVIEW
+        </div>
+        <div style={{
+          background: 'var(--bg)', border: '1px solid var(--border)',
+          borderRadius: 14, padding: '20px 20px 16px',
+        }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 2,
+            color: 'var(--accent)', marginBottom: 10, textTransform: 'uppercase',
+          }}>
+            📌 Pinned
+          </div>
+          <PinnedCardPreview pinned={form} />
+          {!form.enabled && (
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10, textAlign: 'center' }}>
+              Toggle on above to make this visible on your public page.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <SaveBtn onClick={handleSave} />
+    </div>
+  )
+}
+
+function PinnedCardPreview({ pinned }) {
+  const BADGE_MAP = {
+    free: { label: 'Free',    color: '#22c55e',      bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.2)' },
+    new:  { label: 'New',     color: 'var(--accent)', bg: 'rgba(232,255,87,0.1)', border: 'rgba(232,255,87,0.2)' },
+    hot:  { label: '🔥 Hot',  color: '#ff6b35',      bg: 'rgba(255,107,53,0.12)', border: 'rgba(255,107,53,0.2)' },
+  }
+  const badge = BADGE_MAP[pinned.badge]
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 14,
+      padding: '16px 18px', borderRadius: 14,
+      background: 'linear-gradient(135deg, #141a0a 0%, #0f1208 100%)',
+      border: '1px solid rgba(232,255,87,0.4)',
+      boxShadow: '0 0 0 1px rgba(232,255,87,0.08), 0 8px 32px rgba(232,255,87,0.08)',
+      opacity: pinned.enabled ? 1 : 0.45,
+      transition: 'opacity 0.2s',
+    }}>
+      <div style={{
+        width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+        background: 'var(--accent)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+      }}>
+        {pinned.icon || '📌'}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 700,
+          color: 'var(--accent)', letterSpacing: '-0.2px', marginBottom: 2,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {pinned.title || 'Link title'}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {pinned.subtitle || 'Subtitle goes here'}
+        </div>
+      </div>
+      {badge && (
+        <span style={{
+          fontSize: 10, fontWeight: 700, letterSpacing: 0.5, padding: '4px 8px',
+          borderRadius: 6, flexShrink: 0, textTransform: 'uppercase',
+          color: badge.color, background: badge.bg, border: `1px solid ${badge.border}`,
+        }}>
+          {badge.label}
+        </span>
+      )}
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: 'var(--accent)', flexShrink: 0 }}>
+        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
     </div>
   )
 }
