@@ -5,19 +5,27 @@
   padding: 0 16px 60px;
   position: relative;
   overflow-x: hidden;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(0,0,0,0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
-.glow {
+/* Bottom vignette — fades the grid into a darker tone */
+.page::after {
+  content: '';
   position: fixed;
-  top: -200px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(232,255,87,0.06) 0%, transparent 70%);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 480px;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.55));
   pointer-events: none;
   z-index: 0;
 }
+
+.glow { display: none; }
 
 .container {
   width: 100%;
@@ -46,79 +54,30 @@
   50% { opacity: 0.2; }
 }
 
-/* HERO */
 .hero {
   text-align: center;
-  padding: 52px 0 32px;
+  padding: 52px 0 28px;
   animation: fadeUp 0.5s ease both;
 }
 
 .avatarWrap {
-  position: relative;
   display: inline-block;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
-/* Rotating glowing arc ring */
-.avatarRing {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    transparent 55%,
-    rgba(232,255,87,0.25) 68%,
-    rgba(232,255,87,0.9) 80%,
-    var(--accent) 88%,
-    rgba(232,255,87,0.9) 96%,
-    transparent 100%
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px));
-  animation: spinRing 3s linear infinite;
-  z-index: 2;
-}
-
-/* Blurred duplicate for glow effect */
-.avatarRingGlow {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    transparent 55%,
-    rgba(232,255,87,0.1) 68%,
-    rgba(232,255,87,0.5) 80%,
-    rgba(232,255,87,0.6) 88%,
-    rgba(232,255,87,0.5) 96%,
-    transparent 100%
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 7px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 7px));
-  animation: spinRing 3s linear infinite;
-  filter: blur(4px);
-  z-index: 1;
-}
-
-@keyframes spinRing {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
+/* Clean circle — no ring, no animation */
 .avatar {
-  width: 88px;
-  height: 88px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-  border: 2px solid rgba(255,255,255,0.06);
+  background: var(--surface2);
+  border: 2.5px solid var(--border2);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
-  z-index: 3;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 .avatar img {
@@ -127,36 +86,29 @@
   object-fit: cover;
   position: absolute;
   inset: 0;
-  z-index: 1;
 }
 
 .avatarFallback {
-  font-family: var(--font-display);
   font-size: 28px;
-  font-weight: 800;
-  color: var(--accent);
-  z-index: 0;
+  font-weight: 700;
+  color: var(--text2);
 }
 
-/* Status badge pill */
+/* Status badge — centered pill below name */
 .statusBadge {
-  position: absolute;
-  bottom: -14px;
-  left: 60%;
-  transform: translateX(-40%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px 4px 7px;
-  background: #111;
-  border: 1px solid rgba(255,255,255,0.1);
+  gap: 6px;
+  padding: 5px 12px 5px 9px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
   border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text2);
   white-space: nowrap;
-  z-index: 4;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
 
 .statusDot {
@@ -170,15 +122,15 @@
 
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.2); }
+  50%       { opacity: 0.7; transform: scale(1.2); }
 }
 
 .name {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 30px;
+  font-weight: 700;
   letter-spacing: -0.5px;
-  margin-bottom: 6px;
+  color: var(--text);
+  margin-bottom: 10px;
 }
 
 .handle {
@@ -191,16 +143,15 @@
 .bio {
   font-size: 14px;
   color: var(--text2);
-  line-height: 1.6;
+  line-height: 1.65;
   max-width: 300px;
   margin: 0 auto 20px;
 }
 
-/* SOCIALS */
 .socials {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 36px;
   flex-wrap: wrap;
   animation: fadeUp 0.5s 0.1s ease both;
@@ -212,32 +163,96 @@
   gap: 6px;
   padding: 7px 14px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border2);
   border-radius: 100px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text2);
   transition: all 0.2s ease;
   white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .pill:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--border2);
+  color: var(--text);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-/* PRODUCTS */
+.videoCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: all 0.2s ease;
+  animation: fadeUp 0.5s 0.12s ease both;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.videoCard:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.videoThumb {
+  width: 80px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface2);
+}
+
+.videoInfo { flex: 1; min-width: 0; }
+
+.videoLabel {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+
+.videoTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
+.videoMeta { font-size: 11px; color: var(--muted); }
+
+.videoWatch {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.videoCard:hover .videoWatch { color: var(--text2); }
+
 .productsSection {
   margin-bottom: 28px;
   animation: fadeUp 0.5s 0.15s ease both;
 }
 
-.productsStack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.productsStack { display: flex; flex-direction: column; gap: 8px; }
 
 .productCard {
   display: flex;
@@ -250,17 +265,18 @@
   color: var(--text);
   transition: all 0.2s ease;
   text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
 .productCard:hover {
-  border-color: rgba(232,255,87,0.25);
+  border-color: var(--border2);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
 .productThumb {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 10px;
   flex-shrink: 0;
   background: var(--surface2);
@@ -271,24 +287,16 @@
   justify-content: center;
 }
 
-.productThumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+.productThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .productThumbFallback {
-  font-size: 22px;
+  font-size: 20px;
   font-family: var(--font-display);
   font-weight: 800;
-  color: var(--accent);
+  color: var(--muted);
 }
 
-.productInfo {
-  flex: 1;
-  min-width: 0;
-}
+.productInfo { flex: 1; min-width: 0; }
 
 .productName {
   font-family: var(--font-display);
@@ -320,10 +328,18 @@
 
 .productPrice {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--accent);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
+}
+
+.productPriceWhite {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.2px;
 }
 
 .productBtn {
@@ -333,19 +349,8 @@
   transition: color 0.2s;
 }
 
-.productCard:hover .productBtn {
-  color: var(--accent);
-}
+.productCard:hover .productBtn { color: var(--text2); }
 
-.productPriceWhite {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.3px;
-}
-
-/* GRID LAYOUT */
 .productsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -357,17 +362,18 @@
   flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
   color: var(--text);
   transition: all 0.2s ease;
   text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
 .productCardGrid:hover {
-  border-color: rgba(232,255,87,0.25);
+  border-color: var(--border2);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 
 .productThumbGrid {
@@ -381,12 +387,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-.productThumbGrid img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+.productThumbGrid img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .productInfoGrid {
   padding: 10px 12px 12px;
@@ -423,93 +424,15 @@
   margin-top: 4px;
 }
 
-.productCardGrid:hover .productBtn {
-  color: var(--accent);
-}
+.productCardGrid:hover .productBtn { color: var(--text2); }
 
-/* LATEST VIDEO */
-.videoCard {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  color: var(--text);
-  text-decoration: none;
-  margin-bottom: 28px;
-  transition: all 0.2s ease;
-  animation: fadeUp 0.5s 0.12s ease both;
-}
-
-.videoCard:hover {
-  border-color: rgba(232,255,87,0.25);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-}
-
-.videoThumb {
-  width: 80px;
-  height: 52px;
-  border-radius: 8px;
-  object-fit: cover;
-  flex-shrink: 0;
-  background: var(--surface2);
-}
-
-.videoInfo {
-  flex: 1;
-  min-width: 0;
-}
-
-.videoLabel {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 3px;
-}
-
-.videoTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.35;
-  margin-bottom: 4px;
-}
-
-.videoMeta {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.videoWatch {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  flex-shrink: 0;
-  transition: color 0.2s;
-  white-space: nowrap;
-}
-
-.videoCard:hover .videoWatch {
-  color: var(--accent);
-}
-
-/* SHOW MORE */
 .showMoreBtn {
   display: block;
   width: 100%;
   margin-top: 10px;
   padding: 10px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border2);
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
@@ -520,14 +443,83 @@
 }
 
 .showMoreBtn:hover {
-  border-color: rgba(232,255,87,0.3);
-  color: var(--accent);
+  border-color: var(--border2);
+  color: var(--text2);
 }
 
-/* PINNED */
 .pinnedSection {
+  position: relative;
   margin-bottom: 28px;
   animation: fadeUp 0.5s 0.15s ease both;
+}
+
+/* ── Cursor hint animation ── */
+@keyframes cursorEnter {
+  /* start off-screen right, invisible */
+  0%   { transform: translateX(280px);                             opacity: 0;   }
+  /* enter screen */
+  8%   { transform: translateX(200px);                             opacity: 1;   }
+  /* glide smoothly to card */
+  44%  { transform: translateX(0);                                 opacity: 1;   }
+  /* hover briefly */
+  50%  { transform: translateX(0);                                 opacity: 1;   }
+  /* click — press down */
+  56%  { transform: translateX(0) translateY(4px) scale(0.82);    opacity: 1;   }
+  /* release */
+  65%  { transform: translateX(0);                                 opacity: 1;   }
+  /* hold over card */
+  82%  { transform: translateX(0);                                 opacity: 1;   }
+  /* fade out */
+  93%  { transform: translateX(0);                                 opacity: 0;   }
+  100% { transform: translateX(280px);                             opacity: 0;   }
+}
+
+@keyframes rippleClick {
+  0%   { transform: scale(0);   opacity: 0.6; }
+  100% { transform: scale(3.5); opacity: 0;   }
+}
+
+@keyframes cardClickBounce {
+  0%   { transform: scale(1);     }
+  25%  { transform: scale(0.962); }  /* press down  */
+  55%  { transform: scale(1.03);  }  /* bounce up   */
+  75%  { transform: scale(0.988); }  /* settle      */
+  100% { transform: scale(1);     }
+}
+
+/* Applied when cursorActive — fires in sync with the click moment */
+.pinnedGlowBounce {
+  animation: cardClickBounce 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1.96s both;
+}
+
+.cursorHint {
+  position: absolute;
+  bottom: 22px;     /* stays in the card-body row regardless of thumbnail */
+  right: 22%;
+  pointer-events: none;
+  z-index: 20;
+  animation: cursorEnter 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.cursorHint svg {
+  width: 26px;
+  height: 30px;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.55));
+}
+
+/* Ripple fires at the click moment ≈ 56% × 3.5s = 1.96s */
+.cursorRipple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.65);
+  pointer-events: none;
+  opacity: 0;
+  animation: rippleClick 0.55s ease-out 1.96s forwards;
 }
 
 .pinnedLabel {
@@ -536,27 +528,98 @@
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--muted);
   margin-bottom: 10px;
   padding-left: 2px;
 }
 
+/* ── Rotating glow border ── */
+@keyframes rotateBorder {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.pinnedGlowWrap {
+  position: relative;
+  border-radius: 20px;
+  padding: 2px;
+  overflow: hidden;
+  box-shadow:
+    0 0 22px rgba(74,124,64,0.22),
+    0 0 44px rgba(224,122,47,0.10),
+    0 8px 32px rgba(0,0,0,0.18);
+}
+
+.pinnedGlowWrap::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  background: conic-gradient(
+    from 0deg,
+    transparent    0deg,
+    #4A7C40       60deg,
+    #8FC97F      120deg,
+    #E07A2F      180deg,
+    #8FC97F      240deg,
+    #4A7C40      300deg,
+    transparent  360deg
+  );
+  animation: rotateBorder 4s linear infinite;
+  z-index: 0;
+}
+
+/* ── Pinned card itself ── */
 .pinnedCard {
-  background: linear-gradient(135deg, #141a0a 0%, #0f1208 100%);
-  border-color: rgba(232,255,87,0.4);
-  box-shadow: 0 0 0 1px rgba(232,255,87,0.08), 0 8px 32px rgba(232,255,87,0.08);
+  position: relative;
+  z-index: 1;
+  display: block;
+  background: #1A1A1A;
+  border-radius: 18px;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.25s ease;
 }
 
-.pinnedCard:hover {
-  border-color: rgba(232,255,87,0.65);
-  box-shadow: 0 0 0 1px rgba(232,255,87,0.15), 0 12px 40px rgba(232,255,87,0.14);
+.pinnedCard:hover { transform: translateY(-2px); }
+
+/* Thumbnail */
+.pinnedThumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  display: block;
 }
 
-.pinnedTitle {
-  color: var(--accent);
+.pinnedThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
 }
 
-/* SECTIONS */
+.pinnedCard:hover .pinnedThumb img { transform: scale(1.04); }
+
+/* Card body row (icon + text + badge + arrow) */
+.pinnedCardBody {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.pinnedTitle { color: #FFFFFF !important; }
+.pinnedSub   { color: rgba(255,255,255,0.45) !important; }
+
+.pinnedBadge {
+  background: rgba(255,255,255,0.14) !important;
+  color: #FFFFFF !important;
+}
+
+.pinnedCard .arrow        { color: rgba(255,255,255,0.35); }
+.pinnedCard:hover .arrow  { color: #FFFFFF; transform: translateX(3px); }
+
 .section {
   margin-bottom: 28px;
   animation: fadeUp 0.5s 0.2s ease both;
@@ -573,49 +636,44 @@
   padding-left: 2px;
 }
 
-.linksStack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.linksStack { display: flex; flex-direction: column; gap: 8px; }
 
 .card {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   color: var(--text);
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(232,255,87,0.03), transparent);
-  opacity: 0;
-  transition: opacity 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
 .card:hover {
-  border-color: rgba(232,255,87,0.25);
+  border-color: var(--border2);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
-
-.card:hover::before { opacity: 1; }
 
 .featured {
-  background: linear-gradient(135deg, #141a0a 0%, #0f1208 100%);
-  border-color: rgba(232,255,87,0.2);
+  background: #1A1A1A;
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
-.featured .cardTitle { color: var(--accent); }
+.featured:hover {
+  border-color: rgba(255,255,255,0.15) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+}
+
+.featured .cardTitle { color: #FFFFFF; }
+.featured .cardSub   { color: rgba(255,255,255,0.5); }
+.featured .arrow     { color: rgba(255,255,255,0.4); }
+.featured:hover .arrow { color: #FFFFFF; transform: translateX(3px); }
 
 .icon {
   width: 42px;
@@ -627,11 +685,34 @@
   font-size: 20px;
   flex-shrink: 0;
   background: var(--surface2);
+  border: 1px solid var(--border);
 }
 
 .iconAccent {
   background: var(--accent);
+  border-color: transparent;
   font-size: 18px;
+}
+
+/* Icon slot when an image URL is used instead of emoji */
+.iconImg {
+  background: transparent;
+  border-color: rgba(255,255,255,0.12);
+  padding: 0;
+  overflow: hidden;
+}
+
+.iconImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 10px;
+}
+
+.featured .icon {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.1);
 }
 
 .cardText { flex: 1; min-width: 0; }
@@ -641,6 +722,7 @@
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.2px;
+  color: var(--text);
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -656,18 +738,27 @@
 }
 
 .badge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 5px 12px;
+  border-radius: 100px;
   flex-shrink: 0;
   text-transform: uppercase;
+  border: none;
 }
 
-.badgeFree { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
-.badgeNew  { background: rgba(232,255,87,0.1);  color: var(--accent); border: 1px solid rgba(232,255,87,0.2); }
-.badgeHot  { background: rgba(255,107,53,0.12); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+/* FREE on light card — soft sage green pill */
+.badgeFree { background: rgba(74,124,64,0.12); color: #3A6832; }
+
+/* FREE on dark/featured card — white pill */
+.featured .badgeFree { background: rgba(255,255,255,0.18); color: #FFFFFF; }
+
+/* NEW — warm amber pill */
+.badgeNew { background: rgba(245,158,11,0.13); color: #B45309; }
+
+/* HOT — soft orange pill */
+.badgeHot { background: rgba(234,88,12,0.1); color: #C2410C; }
 
 .arrow {
   color: var(--muted);
@@ -677,41 +768,41 @@
 
 .card:hover .arrow {
   transform: translateX(3px);
-  color: var(--accent);
+  color: var(--text2);
 }
 
-/* FOOTER */
 .footer {
   text-align: center;
   padding-top: 16px;
   margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
 }
 
-.footerText {
-  font-size: 11px;
-  color: var(--muted);
-}
+.footerText { font-size: 11px; color: var(--text2); }
 
 .footerEmail {
   display: inline-block;
   margin-top: 8px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text2);
   transition: color 0.2s;
 }
 
-.footerEmail:hover { color: var(--accent); }
+.footerEmail:hover { color: var(--text); }
 
 .adminLink {
   display: block;
   text-align: center;
   font-size: 16px;
-  color: #2a2a2a;
+  color: var(--muted);
   padding: 8px;
   transition: color 0.2s;
+  position: relative;
+  z-index: 2;
 }
 
-.adminLink:hover { color: var(--muted); }
+.adminLink:hover { color: var(--text2); }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }

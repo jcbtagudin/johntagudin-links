@@ -92,10 +92,12 @@ export function useProfile() {
 const DEFAULT_PINNED = {
   enabled: false,
   icon: '📌',
+  iconUrl: '',
   title: '',
   subtitle: '',
   url: '',
   badge: '',
+  thumbnailUrl: '',
 }
 
 export function usePinned() {

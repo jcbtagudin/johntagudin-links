@@ -574,7 +574,7 @@ function ProductsTab({ onSaved }) {
     ...s.iconBtn,
     padding: '7px 14px', fontSize: 12, borderRadius: 8,
     border: '1px solid var(--border)',
-    background: active ? 'rgba(232,255,87,0.08)' : 'var(--surface2)',
+    background: active ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
     color: active ? 'var(--accent)' : 'var(--text2)',
     fontWeight: active ? 600 : 400,
   })
@@ -788,7 +788,7 @@ function PinnedTab({ onSaved }) {
       {/* Fields */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <div style={s.field}>
-          <label style={s.label}>ICON</label>
+          <label style={s.label}>ICON EMOJI</label>
           <input
             style={{ ...s.input, width: 64, textAlign: 'center', fontSize: 22, padding: '8px' }}
             value={form.icon}
@@ -808,8 +808,16 @@ function PinnedTab({ onSaved }) {
         </div>
       </div>
 
+      <Field
+        label="ICON IMAGE URL (overrides emoji above)"
+        value={form.iconUrl || ''}
+        onChange={v => set('iconUrl', v)}
+        placeholder="https://... (png, jpg, svg — leave blank to use emoji)"
+      />
+
       <Field label="SUBTITLE" value={form.subtitle} onChange={v => set('subtitle', v)} placeholder="e.g. Watch my latest video on AI tools" />
       <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />
+      <Field label="THUMBNAIL IMAGE URL" value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} placeholder="https://... (paste any image URL for the card preview)" />
 
       {/* Live preview */}
       <div>
@@ -932,7 +940,7 @@ function AnalyticsTab() {
               </div>
               <div style={{
                 fontSize: 28, fontWeight: 800, lineHeight: 1,
-                fontFamily: 'Syne, sans-serif',
+                fontFamily: "'SF Pro Display', -apple-system, sans-serif",
                 color: stat.accent ? 'var(--accent)' : 'var(--text)',
               }}>
                 {stat.value}
@@ -1038,7 +1046,7 @@ function PinnedCardPreview({ pinned }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 700,
+          fontFamily: "'SF Pro Display', -apple-system, sans-serif", fontSize: 14, fontWeight: 700,
           color: 'var(--accent)', letterSpacing: '-0.2px', marginBottom: 2,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
@@ -1057,7 +1065,7 @@ function PinnedCardPreview({ pinned }) {
           {badge.label}
         </span>
       )}
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: 'var(--accent)', flexShrink: 0 }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: 'var(--muted)', flexShrink: 0 }}>
         <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     </div>
@@ -1091,12 +1099,12 @@ function AreaChart({ data }) {
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 130, display: 'block' }}>
       <defs>
         <linearGradient id="clicksGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e8ff57" stopOpacity="0.22" />
-          <stop offset="85%" stopColor="#e8ff57" stopOpacity="0" />
+          <stop offset="0%" stopColor="#4A7C40" stopOpacity="0.25" />
+          <stop offset="85%" stopColor="#4A7C40" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={areaPath} fill="url(#clicksGrad)" />
-      <path d={linePath} fill="none" stroke="#e8ff57" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={linePath} fill="none" stroke="#4A7C40" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -1136,21 +1144,21 @@ const s = {
     padding: '24px 16px', position: 'sticky', top: 0, height: '100vh',
   },
   sideTop: { display: 'flex', flexDirection: 'column', gap: 24 },
-  logo: { fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.3px' },
+  logo: { fontFamily: "'SF Pro Display', -apple-system, sans-serif", fontSize: 18, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.3px' },
   nav: { display: 'flex', flexDirection: 'column', gap: 4 },
   navBtn: {
     background: 'transparent', border: 'none', borderRadius: 8,
     padding: '10px 12px', color: 'var(--text2)', fontSize: 13,
     fontWeight: 500, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
   },
-  navActive: { background: 'rgba(232,255,87,0.08)', color: 'var(--accent)' },
+  navActive: { background: 'rgba(74,124,64,0.1)', color: 'var(--accent)', fontWeight: 600 },
   sideBottom: { display: 'flex', flexDirection: 'column' },
   userInfo: { display: 'flex', alignItems: 'center', gap: 8 },
   userAvatar: { width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' },
   userEmail: { fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   previewBtn: {
     flex: 1, padding: '8px 0',
-    background: 'rgba(232,255,87,0.08)', border: '1px solid rgba(232,255,87,0.15)',
+    background: 'rgba(74,124,64,0.08)', border: '1px solid rgba(74,124,64,0.2)',
     borderRadius: 8, color: 'var(--accent)', fontSize: 12, fontWeight: 500,
     textAlign: 'center', cursor: 'pointer',
   },
@@ -1164,7 +1172,7 @@ const s = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '24px 32px 0', marginBottom: 24,
   },
-  headerTitle: { fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 800, color: 'var(--text)' },
+  headerTitle: { fontFamily: "'SF Pro Display', -apple-system, sans-serif", fontSize: 22, fontWeight: 800, color: 'var(--text)' },
   savedBadge: {
     fontSize: 12, fontWeight: 600, color: 'var(--green)',
     background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
@@ -1187,9 +1195,9 @@ const s = {
   },
   saveBtn: {
     marginTop: 8, padding: '12px 24px', background: 'var(--accent)',
-    border: 'none', borderRadius: 10, color: '#0a0a0a',
+    border: 'none', borderRadius: 10, color: '#FFFFFF',
     fontSize: 14, fontWeight: 700, cursor: 'pointer',
-    fontFamily: 'Syne, sans-serif', alignSelf: 'flex-start',
+    fontFamily: "'SF Pro Display', -apple-system, sans-serif", alignSelf: 'flex-start',
   },
   addBtn: {
     padding: '10px 16px', background: 'var(--surface2)',

@@ -17,11 +17,28 @@ function isLinkLive(link) {
   return true
 }
 
+// Triggers the cursor hint on load, then again 30 s later
+function useCursorHint() {
+  const [active, setActive] = useState(false)
+  useEffect(() => {
+    const DURATION = 3600
+    const play = () => {
+      setActive(true)
+      setTimeout(() => setActive(false), DURATION)
+    }
+    const t1 = setTimeout(play, 900)        // first play after page settles
+    const loop = setInterval(play, 20000)   // then every 20 s
+    return () => { clearTimeout(t1); clearInterval(loop) }
+  }, [])
+  return active
+}
+
 export default function PublicPage() {
   const { profile, loading: pl } = useProfile()
   const { data, loading: ll } = useLinks()
   const { pinned, loading: pinnedLoading } = usePinned()
   const { products, loading: productsLoading } = useProducts()
+  const cursorActive = useCursorHint()
 
   if (pl || ll || pinnedLoading || productsLoading) return (
     <div className={styles.loadWrap}>
@@ -40,22 +57,20 @@ export default function PublicPage() {
         {/* HERO */}
         <div className={styles.hero}>
           <div className={styles.avatarWrap}>
-            <div className={styles.avatarRing} />
-            <div className={styles.avatarRingGlow} />
             <div className={styles.avatar}>
               {profile.avatarUrl
                 ? <img src={profile.avatarUrl} alt={profile.name} onError={e => e.target.style.display = 'none'} />
                 : null}
               <span className={styles.avatarFallback}>JT</span>
             </div>
-            {profile.status && (
-              <div className={styles.statusBadge}>
-                <span className={styles.statusDot} />
-                {profile.status}
-              </div>
-            )}
           </div>
           <div className={styles.name}>{profile.name}</div>
+          {profile.status && (
+            <div className={styles.statusBadge}>
+              <span className={styles.statusDot} />
+              {profile.status}
+            </div>
+          )}
           <div className={styles.handle}>{profile.handle}</div>
           <div className={styles.bio}>
             {profile.bioHighlight
@@ -83,25 +98,44 @@ export default function PublicPage() {
         {pinned?.enabled && pinned?.url && (
           <div className={styles.pinnedSection}>
             <div className={styles.pinnedLabel}>📌 Pinned</div>
-            <a
-              href={pinned.url}
-              target="_blank"
-              rel="noopener"
-              className={`${styles.card} ${styles.pinnedCard}`}
-              onClick={() => logClick('pinned', pinned.title, 'pinned')}
-            >
-              <div className={`${styles.icon} ${styles.iconAccent}`}>{pinned.icon}</div>
-              <div className={styles.cardText}>
-                <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
-                <div className={styles.cardSub}>{pinned.subtitle}</div>
-              </div>
-              {BADGE_MAP[pinned.badge] && (
-                <span className={`${styles.badge} ${styles[BADGE_MAP[pinned.badge].cls]}`}>
-                  {BADGE_MAP[pinned.badge].label}
-                </span>
-              )}
-              <Arrow />
-            </a>
+            <div className={`${styles.pinnedGlowWrap} ${cursorActive ? styles.pinnedGlowBounce : ''}`}>
+
+              <a
+                href={pinned.url}
+                target="_blank"
+                rel="noopener"
+                className={styles.pinnedCard}
+                onClick={() => logClick('pinned', pinned.title, 'pinned')}
+              >
+                {pinned.thumbnailUrl && (
+                  <div className={styles.pinnedThumb}>
+                    <img
+                      src={pinned.thumbnailUrl}
+                      alt={pinned.title}
+                      onError={e => e.target.style.display = 'none'}
+                    />
+                  </div>
+                )}
+                <div className={styles.pinnedCardBody}>
+                  <div className={`${styles.icon} ${pinned.iconUrl ? styles.iconImg : styles.iconAccent}`}>
+                    {pinned.iconUrl
+                      ? <img src={pinned.iconUrl} alt="" onError={e => e.target.style.display = 'none'} />
+                      : pinned.icon}
+                  </div>
+                  <div className={styles.cardText}>
+                    <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
+                    <div className={`${styles.cardSub} ${styles.pinnedSub}`}>{pinned.subtitle}</div>
+                  </div>
+                  {BADGE_MAP[pinned.badge] && (
+                    <span className={`${styles.badge} ${styles.pinnedBadge}`}>
+                      {BADGE_MAP[pinned.badge].label}
+                    </span>
+                  )}
+                  <Arrow />
+                </div>
+              </a>
+            </div>
+            {cursorActive && <CursorHint />}
           </div>
         )}
 
@@ -311,7 +345,7 @@ function renderBioWithHighlight(bio, highlight) {
   return (
     <>
       {parts[0]}
-      <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{highlight}</span>
+      <span style={{ color: 'var(--text)', fontWeight: 700 }}>{highlight}</span>
       {parts[1]}
     </>
   )
@@ -322,5 +356,25 @@ function Arrow() {
     <svg className={styles.arrow} width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
+  )
+}
+
+// ── Animated cursor hint for pinned card ──────────────────────────────────────
+function CursorHint() {
+  return (
+    <div className={styles.cursorHint} aria-hidden="true">
+      {/* Standard arrow cursor — white fill + dark stroke for contrast on any bg */}
+      <svg width="26" height="30" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M3 1.5L3 22L8 16.5L11.5 25L14.5 23.5L11 15L17.5 15L3 1.5Z"
+          fill="white"
+          stroke="#111111"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className={styles.cursorRipple} />
+    </div>
   )
 }
