@@ -22,6 +22,7 @@ const DEFAULT_PROFILE = {
   status: 'Creating',
   showLatestVideo: true,
   latestVideoInline: false,
+  latestVideoPosition: 'top',
 }
 
 const DEFAULT_LINKS = {

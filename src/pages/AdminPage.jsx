@@ -214,6 +214,30 @@ function ProfileTab({ profile, update, onSaved }) {
           </button>
         </div>
 
+        {/* Position toggle */}
+        {form.showLatestVideo !== false && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Position</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Where the video card appears on your page</div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[{ value: 'top', label: '↑ Top' }, { value: 'bottom', label: '↓ Bottom' }].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => set('latestVideoPosition', opt.value)}
+                  style={{
+                    padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 8, cursor: 'pointer',
+                    border: '1px solid var(--border)',
+                    background: (form.latestVideoPosition || 'top') === opt.value ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
+                    color: (form.latestVideoPosition || 'top') === opt.value ? 'var(--accent)' : 'var(--text2)',
+                  }}
+                >{opt.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Inline preview toggle */}
         {form.showLatestVideo !== false && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>

@@ -91,8 +91,10 @@ export default function PublicPage() {
           </div>
         )}
 
-        {/* LATEST VIDEO */}
-        {profile.showLatestVideo !== false && <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />}
+        {/* LATEST VIDEO — top position (default) */}
+        {profile.showLatestVideo !== false && profile.latestVideoPosition !== 'bottom' && (
+          <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />
+        )}
 
         {/* PINNED LINK */}
         {pinned?.enabled && pinned?.url && (
@@ -181,6 +183,11 @@ export default function PublicPage() {
             </div>
           )
         })}
+
+        {/* LATEST VIDEO — bottom position */}
+        {profile.showLatestVideo !== false && profile.latestVideoPosition === 'bottom' && (
+          <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />
+        )}
 
         {/* FOOTER */}
         <div className={styles.footer}>
