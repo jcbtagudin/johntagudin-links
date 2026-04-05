@@ -49,6 +49,18 @@ export default async function handler(req, res) {
   const RESEND_API_KEY     = process.env.RESEND_API_KEY
   const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID
 
+  // Read sender address from Firestore config/profile (publicly readable)
+  let fromAddress = 'John Tagudin <hello@johntagudin.com>'
+  try {
+    const profileUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/profile?key=${apiKey}`
+    const profileRes = await fetch(profileUrl)
+    if (profileRes.ok) {
+      const profileData = await profileRes.json()
+      const resendFrom = profileData?.fields?.resendFrom?.stringValue
+      if (resendFrom && resendFrom.trim()) fromAddress = resendFrom.trim()
+    }
+  } catch (_) { /* Fall back to default sender */ }
+
   if (RESEND_API_KEY && RESEND_AUDIENCE_ID) {
     // Add contact to audience
     try {
@@ -71,7 +83,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'John Tagudin <hello@johntagudin.com>',
+          from: fromAddress,
           to: cleanEmail,
           subject: 'you made a good call 👋',
           html: `

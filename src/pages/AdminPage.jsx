@@ -340,6 +340,12 @@ function ProfileTab({ profile, update, onSaved }) {
               onChange={v => set('captureProof', v)}
               placeholder="Joined by 500K+ creators"
             />
+            <Field
+              label="WELCOME EMAIL SENDER"
+              value={form.resendFrom || ''}
+              onChange={v => set('resendFrom', v)}
+              placeholder="John Tagudin <hello@johntagudin.com>"
+            />
           </>
         )}
       </div>

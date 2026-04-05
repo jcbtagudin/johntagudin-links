@@ -530,7 +530,7 @@ function EmailCaptureCard({ profile }) {
           type="email"
           placeholder="your@email.com"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={e => { setEmail(e.target.value); if (status === 'error') setStatus('idle') }}
           disabled={status === 'loading'}
           autoComplete="email"
         />
