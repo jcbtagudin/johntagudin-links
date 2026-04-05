@@ -19,8 +19,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 220px;
-  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.13));
+  height: 340px;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.28));
   pointer-events: none;
   z-index: 0;
 }
