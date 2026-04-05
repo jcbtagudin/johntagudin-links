@@ -426,6 +426,38 @@
 
 .productCardGrid:hover .productBtn { color: var(--text2); }
 
+/* ── Featured product card (dark + vibrate, same system as featured links) ── */
+.featuredProduct {
+  background: #1A1A1A !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+  animation: vibrateWiggle 5s ease-in-out 1.5s infinite;
+}
+
+.featuredProduct:hover {
+  border-color: rgba(255,255,255,0.15) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+  animation-play-state: paused;
+}
+
+.featuredProduct .productName,
+.featuredProduct .productNameGrid { color: #FFFFFF; }
+
+.featuredProduct .productDesc,
+.featuredProduct .productDescGrid { color: rgba(255,255,255,0.5); }
+
+.featuredProduct .productPrice,
+.featuredProduct .productPriceWhite { color: rgba(255,255,255,0.85); }
+
+.featuredProduct .productBtn { color: rgba(255,255,255,0.5); }
+.featuredProduct:hover .productBtn { color: #FFFFFF; }
+
+.featuredProduct .productThumb,
+.featuredProduct .productThumbGrid {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.1);
+}
+
 .showMoreBtn {
   display: block;
   width: 100%;
@@ -659,15 +691,27 @@
   box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
+/* ── Vibrate wiggle — fires in first 6% then stays still for ~4.7s ── */
+@keyframes vibrateWiggle {
+  0%, 6%, 100% { transform: translateX(0) rotate(0); }
+  1%   { transform: translateX(-2.5px) rotate(-0.4deg); }
+  2%   { transform: translateX(2.5px)  rotate(0.4deg);  }
+  3%   { transform: translateX(-2.5px) rotate(-0.4deg); }
+  4%   { transform: translateX(2.5px)  rotate(0.4deg);  }
+  5%   { transform: translateX(-1px)   rotate(0);        }
+}
+
 .featured {
   background: #1A1A1A;
   border-color: rgba(255,255,255,0.08);
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  animation: vibrateWiggle 5s ease-in-out 1.5s infinite;
 }
 
 .featured:hover {
   border-color: rgba(255,255,255,0.15) !important;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+  animation-play-state: paused;
 }
 
 .featured .cardTitle { color: #FFFFFF; }

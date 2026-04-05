@@ -202,6 +202,7 @@ const DEFAULT_PRODUCTS = {
       url: 'https://johntagudin.gumroad.com/l/FloatAdGen',
       thumbnailUrl: '',
       visible: true,
+      featured: false,
     },
     {
       id: 'gp2',
@@ -211,6 +212,7 @@ const DEFAULT_PRODUCTS = {
       url: 'https://johntagudin.gumroad.com/',
       thumbnailUrl: '',
       visible: true,
+      featured: false,
     },
   ]
 }

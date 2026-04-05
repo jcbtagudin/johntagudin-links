@@ -278,7 +278,7 @@ function ProductsSection({ products, logClick, styles }) {
               href={product.url}
               target="_blank"
               rel="noopener"
-              className={styles.productCardGrid}
+              className={`${styles.productCardGrid} ${product.featured ? styles.featuredProduct : ''}`}
               onClick={() => logClick(product.id, product.name, 'products')}
             >
               <div className={styles.productThumbGrid}>
@@ -306,7 +306,7 @@ function ProductsSection({ products, logClick, styles }) {
               href={product.url}
               target="_blank"
               rel="noopener"
-              className={styles.productCard}
+              className={`${styles.productCard} ${product.featured ? styles.featuredProduct : ''}`}
               onClick={() => logClick(product.id, product.name, 'products')}
             >
               <div className={styles.productThumb}>
