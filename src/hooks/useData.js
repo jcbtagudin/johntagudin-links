@@ -187,8 +187,7 @@ export function useAnalytics() {
 // ─── GUMROAD PRODUCTS ────────────────────────────────────────────────────────
 
 const DEFAULT_PRODUCTS = {
-  layout: 'rows',       // 'rows' | 'grid'
-  priceColor: 'accent', // 'accent' | 'white'
+  layout: 'rows', // 'rows' | 'grid'
   items: [
     {
       id: 'gp1',

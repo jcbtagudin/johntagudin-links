@@ -100,7 +100,8 @@ export default function PublicPage() {
           const visibleProducts = products?.items?.filter(p => p.visible) || []
           if (!visibleProducts.length) return null
           const isGrid = products?.layout === 'grid'
-          const priceWhite = products?.priceColor === 'white'
+          // Auto: if price contains any digit → white; otherwise (Free, etc.) → accent
+          const getPriceClass = (price) => /\d/.test(price) ? styles.productPriceWhite : styles.productPrice
 
           return (
             <div className={styles.productsSection}>
@@ -128,7 +129,7 @@ export default function PublicPage() {
                         <div className={styles.productNameGrid}>{product.name}</div>
                         <div className={styles.productDescGrid}>{product.description}</div>
                         <div className={styles.productMetaGrid}>
-                          <span className={priceWhite ? styles.productPriceWhite : styles.productPrice}>
+                          <span className={getPriceClass(product.price)}>
                             {product.price || 'Free'}
                           </span>
                           <span className={styles.productBtn}>Get it →</span>

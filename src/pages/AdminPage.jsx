@@ -467,21 +467,19 @@ function ProductsTab({ onSaved }) {
   const { products, loading, save } = useProducts()
   const [items, setItems] = useState(null)
   const [layout, setLayout] = useState('rows')
-  const [priceColor, setPriceColor] = useState('accent')
   const sensors = useSensors(useSensor(PointerSensor))
 
   React.useEffect(() => {
     if (products && !items) {
       setItems(products.items || [])
       setLayout(products.layout || 'rows')
-      setPriceColor(products.priceColor || 'accent')
     }
   }, [products])
 
   if (loading || !items) return <Loader />
 
   const saveAll = async () => {
-    await save({ items, layout, priceColor })
+    await save({ items, layout })
     onSaved()
   }
 
@@ -533,14 +531,10 @@ function ProductsTab({ onSaved }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Price color</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button style={optionBtn(priceColor === 'accent')} onClick={() => setPriceColor('accent')}>
-              <span style={{ color: '#e8ff57' }}>●</span> Accent
-            </button>
-            <button style={optionBtn(priceColor === 'white')} onClick={() => setPriceColor('white')}>
-              <span style={{ color: '#fff' }}>●</span> White
-            </button>
-          </div>
+          <span style={{ fontSize: 12, color: 'var(--text2)' }}>
+            Auto — <span style={{ color: 'var(--accent)' }}>accent</span> for "Free",{' '}
+            <span style={{ color: 'var(--text)' }}>white</span> for any price with a number
+          </span>
         </div>
       </div>
 
