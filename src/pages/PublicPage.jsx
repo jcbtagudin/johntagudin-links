@@ -234,7 +234,7 @@ function useLatestVideo() {
 
 function LatestVideoCard({ inlinePreview }) {
   const video = useLatestVideo()
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying] = useState(inlinePreview) // auto-open when inline preview is on
   if (!video) return null
 
   // ── Default mode: link straight to YouTube ────────────────────────────────
