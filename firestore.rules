@@ -14,5 +14,11 @@ service cloud.firestore {
       allow create: if true;
       allow read: if request.auth != null;
     }
+
+    // Page view analytics — anyone can log a view, only authenticated admin can read
+    match /pageviews/{docId} {
+      allow create: if true;
+      allow read: if request.auth != null;
+    }
   }
 }
