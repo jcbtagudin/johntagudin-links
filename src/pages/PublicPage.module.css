@@ -450,18 +450,92 @@
   padding-left: 2px;
 }
 
-.pinnedCard {
-  background: #1A1A1A !important;
-  border-color: rgba(255,255,255,0.1) !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+/* ── Rotating glow border ── */
+@keyframes rotateBorder {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
-.pinnedCard:hover {
-  border-color: rgba(255,255,255,0.2) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+.pinnedGlowWrap {
+  position: relative;
+  border-radius: 20px;
+  padding: 2px;
+  overflow: hidden;
+  box-shadow:
+    0 0 22px rgba(74,124,64,0.22),
+    0 0 44px rgba(224,122,47,0.10),
+    0 8px 32px rgba(0,0,0,0.18);
+}
+
+.pinnedGlowWrap::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  background: conic-gradient(
+    from 0deg,
+    transparent    0deg,
+    #4A7C40       60deg,
+    #8FC97F      120deg,
+    #E07A2F      180deg,
+    #8FC97F      240deg,
+    #4A7C40      300deg,
+    transparent  360deg
+  );
+  animation: rotateBorder 4s linear infinite;
+  z-index: 0;
+}
+
+/* ── Pinned card itself ── */
+.pinnedCard {
+  position: relative;
+  z-index: 1;
+  display: block;
+  background: #1A1A1A;
+  border-radius: 18px;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.25s ease;
+}
+
+.pinnedCard:hover { transform: translateY(-2px); }
+
+/* Thumbnail */
+.pinnedThumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  display: block;
+}
+
+.pinnedThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.pinnedCard:hover .pinnedThumb img { transform: scale(1.04); }
+
+/* Card body row (icon + text + badge + arrow) */
+.pinnedCardBody {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
 }
 
 .pinnedTitle { color: #FFFFFF !important; }
+.pinnedSub   { color: rgba(255,255,255,0.45) !important; }
+
+.pinnedBadge {
+  background: rgba(255,255,255,0.14) !important;
+  color: #FFFFFF !important;
+}
+
+.pinnedCard .arrow        { color: rgba(255,255,255,0.35); }
+.pinnedCard:hover .arrow  { color: #FFFFFF; transform: translateX(3px); }
 
 .section {
   margin-bottom: 28px;

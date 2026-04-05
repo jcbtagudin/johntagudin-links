@@ -96,6 +96,7 @@ const DEFAULT_PINNED = {
   subtitle: '',
   url: '',
   badge: '',
+  thumbnailUrl: '',
 }
 
 export function usePinned() {

@@ -810,6 +810,7 @@ function PinnedTab({ onSaved }) {
 
       <Field label="SUBTITLE" value={form.subtitle} onChange={v => set('subtitle', v)} placeholder="e.g. Watch my latest video on AI tools" />
       <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />
+      <Field label="THUMBNAIL IMAGE URL" value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} placeholder="https://... (paste any image URL for the card preview)" />
 
       {/* Live preview */}
       <div>

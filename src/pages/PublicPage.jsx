@@ -81,25 +81,38 @@ export default function PublicPage() {
         {pinned?.enabled && pinned?.url && (
           <div className={styles.pinnedSection}>
             <div className={styles.pinnedLabel}>📌 Pinned</div>
-            <a
-              href={pinned.url}
-              target="_blank"
-              rel="noopener"
-              className={`${styles.card} ${styles.pinnedCard}`}
-              onClick={() => logClick('pinned', pinned.title, 'pinned')}
-            >
-              <div className={`${styles.icon} ${styles.iconAccent}`}>{pinned.icon}</div>
-              <div className={styles.cardText}>
-                <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
-                <div className={styles.cardSub}>{pinned.subtitle}</div>
-              </div>
-              {BADGE_MAP[pinned.badge] && (
-                <span className={`${styles.badge} ${styles[BADGE_MAP[pinned.badge].cls]}`}>
-                  {BADGE_MAP[pinned.badge].label}
-                </span>
-              )}
-              <Arrow />
-            </a>
+            <div className={styles.pinnedGlowWrap}>
+              <a
+                href={pinned.url}
+                target="_blank"
+                rel="noopener"
+                className={styles.pinnedCard}
+                onClick={() => logClick('pinned', pinned.title, 'pinned')}
+              >
+                {pinned.thumbnailUrl && (
+                  <div className={styles.pinnedThumb}>
+                    <img
+                      src={pinned.thumbnailUrl}
+                      alt={pinned.title}
+                      onError={e => e.target.style.display = 'none'}
+                    />
+                  </div>
+                )}
+                <div className={styles.pinnedCardBody}>
+                  <div className={`${styles.icon} ${styles.iconAccent}`}>{pinned.icon}</div>
+                  <div className={styles.cardText}>
+                    <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
+                    <div className={`${styles.cardSub} ${styles.pinnedSub}`}>{pinned.subtitle}</div>
+                  </div>
+                  {BADGE_MAP[pinned.badge] && (
+                    <span className={`${styles.badge} ${styles.pinnedBadge}`}>
+                      {BADGE_MAP[pinned.badge].label}
+                    </span>
+                  )}
+                  <Arrow />
+                </div>
+              </a>
+            </div>
           </div>
         )}
 
