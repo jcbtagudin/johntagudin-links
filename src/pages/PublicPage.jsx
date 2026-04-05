@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useProfile, useLinks, usePinned, useProducts, logClick } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
@@ -75,6 +75,9 @@ export default function PublicPage() {
             ))}
           </div>
         )}
+
+        {/* LATEST VIDEO */}
+        {profile.showLatestVideo !== false && <LatestVideoCard />}
 
         {/* PINNED LINK */}
         {pinned?.enabled && pinned?.url && (
@@ -159,6 +162,62 @@ export default function PublicPage() {
     </div>
   )
 }
+
+// ─── LATEST VIDEO ─────────────────────────────────────────────────────────────
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins  = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days  = Math.floor(diff / 86400000)
+  const weeks = Math.floor(days / 7)
+  const months = Math.floor(days / 30)
+  if (mins < 60)   return `${mins}m ago`
+  if (hours < 24)  return `${hours}h ago`
+  if (days < 7)    return `${days}d ago`
+  if (weeks < 5)   return `${weeks}w ago`
+  return `${months}mo ago`
+}
+
+function useLatestVideo() {
+  const [video, setVideo] = useState(null)
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_BASE || ''
+    fetch(`${base}/api/latest-video`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.videoId) setVideo(data) })
+      .catch(() => {})
+  }, [])
+  return video
+}
+
+function LatestVideoCard() {
+  const video = useLatestVideo()
+  if (!video) return null
+  return (
+    <a
+      href={video.url}
+      target="_blank"
+      rel="noopener"
+      className={styles.videoCard}
+    >
+      <img
+        src={video.thumbnail}
+        alt={video.title}
+        className={styles.videoThumb}
+        onError={e => e.target.style.display = 'none'}
+      />
+      <div className={styles.videoInfo}>
+        <div className={styles.videoLabel}>▶ Latest Video</div>
+        <div className={styles.videoTitle}>{video.title}</div>
+        <div className={styles.videoMeta}>{timeAgo(video.publishedAt)}</div>
+      </div>
+      <div className={styles.videoWatch}>Watch now →</div>
+    </a>
+  )
+}
+
+// ─── PRODUCTS ─────────────────────────────────────────────────────────────────
 
 const COLLAPSE_THRESHOLD = 3
 

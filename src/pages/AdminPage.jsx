@@ -151,10 +151,23 @@ export default function AdminPage() {
 }
 
 // ─── PROFILE TAB ─────────────────────────────────────────────────────────────
+function useLatestVideoPreview() {
+  const [video, setVideo] = React.useState(null)
+  React.useEffect(() => {
+    const base = import.meta.env.VITE_API_BASE || ''
+    fetch(`${base}/api/latest-video`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.videoId) setVideo(data) })
+      .catch(() => {})
+  }, [])
+  return video
+}
+
 function ProfileTab({ profile, update, onSaved }) {
   const [form, setForm] = useState({ ...profile })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const save = async () => { await update(form); onSaved() }
+  const video = useLatestVideoPreview()
 
   return (
     <div style={s.tabBody}>
@@ -171,6 +184,58 @@ function ProfileTab({ profile, update, onSaved }) {
       <Field label="Status Badge (e.g. Creating, Available, etc. — leave blank to hide)" value={form.status || ''} onChange={v => set('status', v)} placeholder="e.g. Creating" />
       <Field label="Footer Text" value={form.footerText} onChange={v => set('footerText', v)} />
       <Field label="Contact Email" value={form.email} onChange={v => set('email', v)} />
+
+      {/* ── Latest Video Section ── */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>LATEST VIDEO</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Auto-fetched from your YouTube channel</div>
+          </div>
+          {/* Toggle */}
+          <button
+            onClick={() => set('showLatestVideo', !form.showLatestVideo)}
+            style={{
+              width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer',
+              background: form.showLatestVideo !== false ? 'var(--accent)' : 'var(--surface2)',
+              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3,
+              left: form.showLatestVideo !== false ? 20 : 3,
+              width: 16, height: 16, borderRadius: '50%',
+              background: form.showLatestVideo !== false ? '#000' : 'var(--muted)',
+              transition: 'left 0.2s',
+            }} />
+          </button>
+        </div>
+
+        {/* Video preview */}
+        {video ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 12px', background: 'var(--surface2)',
+            border: '1px solid var(--border)', borderRadius: 10,
+            opacity: form.showLatestVideo !== false ? 1 : 0.4,
+          }}>
+            <img src={video.thumbnail} alt={video.title} style={{ width: 72, height: 46, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 3 }}>▶ Now showing</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{video.title}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{new Date(video.publishedAt).toLocaleDateString()}</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0' }}>
+            No video loaded — make sure <code style={{ color: 'var(--accent)' }}>YOUTUBE_API_KEY</code> and <code style={{ color: 'var(--accent)' }}>YOUTUBE_CHANNEL_ID</code> are set on Vercel.
+          </div>
+        )}
+      </div>
+
       <SaveBtn onClick={save} />
     </div>
   )
