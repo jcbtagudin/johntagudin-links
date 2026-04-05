@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  doc, onSnapshot, setDoc, updateDoc, getDoc,
-  collection, addDoc, serverTimestamp
+  doc, onSnapshot, setDoc, updateDoc,
+  collection, addDoc, serverTimestamp, query, orderBy, limit
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
@@ -68,7 +68,6 @@ export function useProfile() {
       if (snap.exists()) {
         setProfile(snap.data())
       } else {
-        // Seed default
         await setDoc(ref, DEFAULT_PROFILE)
         setProfile(DEFAULT_PROFILE)
       }
@@ -161,4 +160,39 @@ export function useLinks() {
   }
 
   return { data, loading, save }
+}
+
+// ─── CLICK ANALYTICS ────────────────────────────────────────────────────────
+
+export async function logClick(linkId, linkTitle, sectionId) {
+  try {
+    await addDoc(collection(db, 'clicks'), {
+      linkId,
+      linkTitle,
+      sectionId,
+      timestamp: serverTimestamp(),
+    })
+  } catch (_) {
+    // Silently fail — analytics should never break the public page
+  }
+}
+
+export function useAnalytics() {
+  const [clicks, setClicks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'clicks'),
+      orderBy('timestamp', 'desc'),
+      limit(5000)
+    )
+    const unsub = onSnapshot(q, snap => {
+      setClicks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    })
+    return unsub
+  }, [])
+
+  return { clicks, loading }
 }
