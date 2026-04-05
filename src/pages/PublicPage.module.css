@@ -435,8 +435,65 @@
 }
 
 .pinnedSection {
+  position: relative;
   margin-bottom: 28px;
   animation: fadeUp 0.5s 0.15s ease both;
+}
+
+/* ── Cursor hint animation ── */
+@keyframes cursorEnter {
+  /* start off-screen right, invisible */
+  0%   { transform: translateX(280px);                             opacity: 0;   }
+  /* enter screen */
+  8%   { transform: translateX(200px);                             opacity: 1;   }
+  /* glide smoothly to card */
+  44%  { transform: translateX(0);                                 opacity: 1;   }
+  /* hover briefly */
+  50%  { transform: translateX(0);                                 opacity: 1;   }
+  /* click — press down */
+  56%  { transform: translateX(0) translateY(4px) scale(0.82);    opacity: 1;   }
+  /* release */
+  65%  { transform: translateX(0);                                 opacity: 1;   }
+  /* hold over card */
+  82%  { transform: translateX(0);                                 opacity: 1;   }
+  /* fade out */
+  93%  { transform: translateX(0);                                 opacity: 0;   }
+  100% { transform: translateX(280px);                             opacity: 0;   }
+}
+
+@keyframes rippleClick {
+  0%   { transform: scale(0);   opacity: 0.6; }
+  100% { transform: scale(3.5); opacity: 0;   }
+}
+
+.cursorHint {
+  position: absolute;
+  bottom: 22px;     /* stays in the card-body row regardless of thumbnail */
+  right: 22%;
+  pointer-events: none;
+  z-index: 20;
+  animation: cursorEnter 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.cursorHint svg {
+  width: 26px;
+  height: 30px;
+  display: block;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.55));
+}
+
+/* Ripple fires at the click moment ≈ 56% × 3.5s = 1.96s */
+.cursorRipple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.65);
+  pointer-events: none;
+  opacity: 0;
+  animation: rippleClick 0.55s ease-out 1.96s forwards;
 }
 
 .pinnedLabel {

@@ -17,11 +17,28 @@ function isLinkLive(link) {
   return true
 }
 
+// Triggers the cursor hint on load, then again 30 s later
+function useCursorHint() {
+  const [active, setActive] = useState(false)
+  useEffect(() => {
+    const DURATION = 3600
+    const play = () => {
+      setActive(true)
+      setTimeout(() => setActive(false), DURATION)
+    }
+    const t1 = setTimeout(play, 900)           // first play after page settles
+    const t2 = setTimeout(play, 30000 + 900)   // repeat 30 s later
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [])
+  return active
+}
+
 export default function PublicPage() {
   const { profile, loading: pl } = useProfile()
   const { data, loading: ll } = useLinks()
   const { pinned, loading: pinnedLoading } = usePinned()
   const { products, loading: productsLoading } = useProducts()
+  const cursorActive = useCursorHint()
 
   if (pl || ll || pinnedLoading || productsLoading) return (
     <div className={styles.loadWrap}>
@@ -82,6 +99,7 @@ export default function PublicPage() {
           <div className={styles.pinnedSection}>
             <div className={styles.pinnedLabel}>📌 Pinned</div>
             <div className={styles.pinnedGlowWrap}>
+
               <a
                 href={pinned.url}
                 target="_blank"
@@ -113,6 +131,7 @@ export default function PublicPage() {
                 </div>
               </a>
             </div>
+            {cursorActive && <CursorHint />}
           </div>
         )}
 
@@ -333,5 +352,25 @@ function Arrow() {
     <svg className={styles.arrow} width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
+  )
+}
+
+// ── Animated cursor hint for pinned card ──────────────────────────────────────
+function CursorHint() {
+  return (
+    <div className={styles.cursorHint} aria-hidden="true">
+      {/* Standard arrow cursor — white fill + dark stroke for contrast on any bg */}
+      <svg width="26" height="30" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M3 1.5L3 22L8 16.5L11.5 25L14.5 23.5L11 15L17.5 15L3 1.5Z"
+          fill="white"
+          stroke="#111111"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className={styles.cursorRipple} />
+    </div>
   )
 }
