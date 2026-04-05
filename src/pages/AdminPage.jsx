@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useAnalytics } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -85,6 +85,7 @@ export default function AdminPage() {
               { id: 'profile',   label: '👤 Profile' },
               { id: 'socials',   label: '📲 Socials' },
               { id: 'links',     label: '🔗 Links' },
+              { id: 'products',  label: '🛍️ Products' },
               { id: 'pinned',    label: '📌 Pinned' },
               { id: 'analytics', label: '📊 Analytics' },
             ].map(item => (
@@ -117,6 +118,7 @@ export default function AdminPage() {
             {tab === 'profile'   && 'Profile Settings'}
             {tab === 'socials'   && 'Social Links'}
             {tab === 'links'     && 'Link Sections'}
+            {tab === 'products'  && 'Gumroad Products'}
             {tab === 'pinned'    && 'Pinned Link'}
             {tab === 'analytics' && 'Click Analytics'}
           </div>
@@ -132,6 +134,9 @@ export default function AdminPage() {
           )}
           {tab === 'links' && (
             <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />
+          )}
+          {tab === 'products' && (
+            <ProductsTab onSaved={showSaved} />
           )}
           {tab === 'pinned' && (
             <PinnedTab onSaved={showSaved} />
@@ -163,6 +168,7 @@ function ProfileTab({ profile, update, onSaved }) {
       )}
       <Field label="Bio" value={form.bio} onChange={v => set('bio', v)} multiline />
       <Field label="Bio Highlight Word (gets colored accent)" value={form.bioHighlight} onChange={v => set('bioHighlight', v)} placeholder="e.g. AI tools" />
+      <Field label="Status Badge (e.g. Creating, Available, etc. — leave blank to hide)" value={form.status || ''} onChange={v => set('status', v)} placeholder="e.g. Creating" />
       <Field label="Footer Text" value={form.footerText} onChange={v => set('footerText', v)} />
       <Field label="Contact Email" value={form.email} onChange={v => set('email', v)} />
       <SaveBtn onClick={save} />
@@ -453,6 +459,199 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
 
       </div>
       <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={onRemove}>✕</button>
+    </div>
+  )
+}
+
+// ─── PRODUCTS TAB ────────────────────────────────────────────────────────────
+function ProductsTab({ onSaved }) {
+  const { products, loading, save } = useProducts()
+  const [items, setItems] = useState(null)
+  const [layout, setLayout] = useState('rows')
+  const [title, setTitle] = useState('My Products')
+  const sensors = useSensors(useSensor(PointerSensor))
+
+  React.useEffect(() => {
+    if (products && !items) {
+      setItems(products.items || [])
+      setLayout(products.layout || 'rows')
+      setTitle(products.title || 'My Products')
+    }
+  }, [products])
+
+  if (loading || !items) return <Loader />
+
+  const saveAll = async () => {
+    await save({ items, layout, title })
+    onSaved()
+  }
+
+  const add = () => setItems(prev => [...prev, {
+    id: uid(), name: '', description: '', price: 'Free',
+    url: '', thumbnailUrl: '', visible: true,
+  }])
+
+  const remove = (id) => setItems(prev => prev.filter(p => p.id !== id))
+  const update = (id, k, v) => setItems(prev => prev.map(p => p.id === id ? { ...p, [k]: v } : p))
+  const toggle = (id) => setItems(prev => prev.map(p => p.id === id ? { ...p, visible: !p.visible } : p))
+
+  const onDragEnd = ({ active, over }) => {
+    if (active.id !== over?.id) {
+      setItems(prev => {
+        const oldIdx = prev.findIndex(p => p.id === active.id)
+        const newIdx = prev.findIndex(p => p.id === over.id)
+        return arrayMove(prev, oldIdx, newIdx)
+      })
+    }
+  }
+
+  const optionBtn = (active) => ({
+    ...s.iconBtn,
+    padding: '7px 14px', fontSize: 12, borderRadius: 8,
+    border: '1px solid var(--border)',
+    background: active ? 'rgba(232,255,87,0.08)' : 'var(--surface2)',
+    color: active ? 'var(--accent)' : 'var(--text2)',
+    fontWeight: active ? 600 : 400,
+  })
+
+  return (
+    <div style={s.tabBody}>
+
+      {/* Display settings */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>DISPLAY SETTINGS</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Section title</span>
+          <input
+            style={{ ...s.input, flex: 1, height: 32, fontSize: 12 }}
+            placeholder="My Products"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+          />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Layout</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button style={optionBtn(layout === 'rows')} onClick={() => setLayout('rows')}>≡ Rows</button>
+            <button style={optionBtn(layout === 'grid')} onClick={() => setLayout('grid')}>⊞ Grid</button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Price color</span>
+          <span style={{ fontSize: 12, color: 'var(--text2)' }}>
+            Auto — <span style={{ color: 'var(--accent)' }}>accent</span> for "Free",{' '}
+            <span style={{ color: 'var(--text)' }}>white</span> for any price with a number
+          </span>
+        </div>
+      </div>
+
+      <div style={s.tabInfo}>Drag to reorder. Each product shows as a card on your public page above your link sections.</div>
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={items.map(p => p.id)} strategy={verticalListSortingStrategy}>
+          {items.map(product => (
+            <SortableProductRow
+              key={product.id}
+              product={product}
+              update={(k, v) => update(product.id, k, v)}
+              toggle={() => toggle(product.id)}
+              remove={() => remove(product.id)}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+
+      <button style={s.addBtn} onClick={add}>+ Add Product</button>
+      <SaveBtn onClick={saveAll} />
+    </div>
+  )
+}
+
+function SortableProductRow({ product, update, toggle, remove }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: product.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+  const [open, setOpen] = React.useState(!product.name)
+
+  return (
+    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', gap: 0, padding: '10px 12px' }}>
+      {/* Compact header — always visible */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span {...attributes} {...listeners} style={s.drag}>⠿</span>
+
+        {/* Thumbnail */}
+        <div style={{
+          width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+          background: 'var(--surface2)', border: '1px solid var(--border)',
+          overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {product.thumbnailUrl
+            ? <img src={product.thumbnailUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
+            : <span style={{ fontSize: 13, color: 'var(--muted)' }}>{product.name?.[0] || '🛍'}</span>
+          }
+        </div>
+
+        {/* Name + price */}
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: product.name ? 'var(--text)' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {product.name || 'New Product'}
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: /\d/.test(product.price) ? 'var(--text)' : 'var(--accent)', flexShrink: 0 }}>
+          {product.price || 'Free'}
+        </span>
+
+        {/* Actions */}
+        <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 4px' }} onClick={toggle}>
+          {product.visible ? '👁' : '🚫'}
+        </button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 4px' }} onClick={remove}>✕</button>
+
+        {/* Expand toggle */}
+        <button
+          style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 4px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          onClick={() => setOpen(o => !o)}
+        >▾</button>
+      </div>
+
+      {/* Expandable fields */}
+      {open && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 10 }}>
+          <input
+            style={s.input}
+            placeholder="Product name"
+            value={product.name}
+            onChange={e => update('name', e.target.value)}
+          />
+          <input
+            style={s.input}
+            placeholder="Price (Free / ₱299)"
+            value={product.price}
+            onChange={e => update('price', e.target.value)}
+          />
+          <input
+            style={{ ...s.input, gridColumn: '1 / -1' }}
+            placeholder="Short description"
+            value={product.description}
+            onChange={e => update('description', e.target.value)}
+          />
+          <input
+            style={s.input}
+            placeholder="Gumroad URL"
+            value={product.url}
+            onChange={e => update('url', e.target.value)}
+          />
+          <input
+            style={s.input}
+            placeholder="Thumbnail URL (optional)"
+            value={product.thumbnailUrl}
+            onChange={e => update('thumbnailUrl', e.target.value)}
+          />
+        </div>
+      )}
     </div>
   )
 }

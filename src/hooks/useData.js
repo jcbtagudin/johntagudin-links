@@ -5,9 +5,10 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
-const PROFILE_DOC = 'config/profile'
-const LINKS_DOC   = 'config/links'
-const PINNED_DOC  = 'config/pinned'
+const PROFILE_DOC   = 'config/profile'
+const LINKS_DOC     = 'config/links'
+const PINNED_DOC    = 'config/pinned'
+const PRODUCTS_DOC  = 'config/products'
 
 // Default data seeded on first run
 const DEFAULT_PROFILE = {
@@ -18,6 +19,7 @@ const DEFAULT_PROFILE = {
   avatarUrl: 'https://framerusercontent.com/images/pr8jf2nk4dZcnTuIcpLEnUZpHg.png',
   email: 'john@johntagudin.com',
   footerText: 'For brand collabs & partnerships',
+  status: 'Creating',
 }
 
 const DEFAULT_LINKS = {
@@ -181,4 +183,57 @@ export function useAnalytics() {
   }, [])
 
   return { clicks, loading }
+}
+
+// ─── GUMROAD PRODUCTS ────────────────────────────────────────────────────────
+
+const DEFAULT_PRODUCTS = {
+  layout: 'rows', // 'rows' | 'grid'
+  title: 'My Products',
+  items: [
+    {
+      id: 'gp1',
+      name: 'Float Ad Gen',
+      description: 'Free 3D floating product ad image generator',
+      price: 'Free',
+      url: 'https://johntagudin.gumroad.com/l/FloatAdGen',
+      thumbnailUrl: '',
+      visible: true,
+    },
+    {
+      id: 'gp2',
+      name: 'Free Creator Kit',
+      description: 'Premiere Pro templates and web tools',
+      price: 'Free',
+      url: 'https://johntagudin.gumroad.com/',
+      thumbnailUrl: '',
+      visible: true,
+    },
+  ]
+}
+
+export function useProducts() {
+  const [products, setProducts] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const ref = doc(db, ...PRODUCTS_DOC.split('/'))
+    const unsub = onSnapshot(ref, async (snap) => {
+      if (snap.exists()) {
+        setProducts(snap.data())
+      } else {
+        await setDoc(ref, DEFAULT_PRODUCTS)
+        setProducts(DEFAULT_PRODUCTS)
+      }
+      setLoading(false)
+    })
+    return unsub
+  }, [])
+
+  const save = async (data) => {
+    const ref = doc(db, ...PRODUCTS_DOC.split('/'))
+    await setDoc(ref, data)
+  }
+
+  return { products, loading, save }
 }
