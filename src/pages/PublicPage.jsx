@@ -26,9 +26,9 @@ function useCursorHint() {
       setActive(true)
       setTimeout(() => setActive(false), DURATION)
     }
-    const t1 = setTimeout(play, 900)           // first play after page settles
-    const t2 = setTimeout(play, 30000 + 900)   // repeat 30 s later
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    const t1 = setTimeout(play, 900)        // first play after page settles
+    const loop = setInterval(play, 20000)   // then every 20 s
+    return () => { clearTimeout(t1); clearInterval(loop) }
   }, [])
   return active
 }
