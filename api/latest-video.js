@@ -1,5 +1,10 @@
 // Vercel serverless function — fetches latest YouTube video
 // Caches result in memory for 1 hour to avoid hitting API rate limits
+//
+// IMPORTANT: The YOUTUBE_API_KEY must have Application Restrictions set to "None"
+// in Google Cloud Console. "HTTP referrers" restriction blocks server-side calls
+// from Vercel since no Referer header is sent. Only API restriction (YouTube Data
+// API v3) is needed.
 
 const CACHE_DURATION = 60 * 60 * 1000 // 1 hour
 
