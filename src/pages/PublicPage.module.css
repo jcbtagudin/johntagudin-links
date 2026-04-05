@@ -293,18 +293,22 @@
 .videoClose {
   font-size: 11px;
   font-weight: 600;
-  color: var(--muted);
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  color: #EF4444;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
   border-radius: 8px;
   padding: 5px 10px;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  transition: all 0.2s;
   white-space: nowrap;
   font-family: var(--font-display);
 }
 
-.videoClose:hover { color: var(--text); border-color: var(--border2); }
+.videoClose:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+  border-color: #EF4444;
+}
 
 /* Thumbnail with play button overlay */
 .videoThumbWrap {
@@ -331,16 +335,16 @@
 .videoThumbWrap:hover .videoPlayOverlay { opacity: 1; }
 
 .videoPlayBtn {
-  width: 28px;
-  height: 28px;
-  background: rgba(255,255,255,0.92);
-  color: #111;
+  width: 32px;
+  height: 32px;
+  background: #EF4444;
+  color: #FFFFFF;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding-left: 2px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 10px rgba(239,68,68,0.5);
 }
 
 .productsSection {
