@@ -231,6 +231,11 @@ export default function PublicPage() {
           <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />
         )}
 
+        {/* EMAIL CAPTURE */}
+        {profile.showEmailCapture === true && (
+          <EmailCaptureCard profile={profile} />
+        )}
+
         {/* FOOTER */}
         <div className={styles.footer}>
           <div className={styles.footerText}>{profile.footerText}</div>
@@ -465,6 +470,79 @@ function Arrow() {
     <svg className={styles.arrow} width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
+  )
+}
+
+// ─── EMAIL CAPTURE CARD ───────────────────────────────────────────────────────
+
+function EmailCaptureCard({ profile }) {
+  const [email, setEmail]   = useState('')
+  const [status, setStatus] = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
+  const [shake, setShake]   = useState(false)
+
+  const headline = profile.captureHeadline || "For when you're too tired to figure this out yourself"
+  const subtext  = profile.captureSubtext  || "I share AI tools, shortcuts, and workflows that actually save time — only when I find something worth sharing. No spam. No schedule."
+  const proof    = profile.captureProof    || "Joined by 500K+ creators"
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setStatus('loading')
+    try {
+      const base = import.meta.env.VITE_API_BASE || ''
+      const res  = await fetch(`${base}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setStatus('success')
+      } else {
+        setStatus('error')
+        setShake(true)
+        setTimeout(() => setShake(false), 600)
+      }
+    } catch {
+      setStatus('error')
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <div className={styles.emailCard}>
+        <p className={styles.emailSuccess}>✓ You're in. Check your inbox for something useful.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.emailCard}>
+      <span className={styles.emailIcon}>🔋</span>
+      <h2 className={styles.emailHeadline}>{headline}</h2>
+      <p className={styles.emailSubtext}>{subtext}</p>
+      <p className={styles.emailProof}>{proof}</p>
+      <form className={styles.emailForm} onSubmit={handleSubmit} noValidate>
+        <input
+          className={`${styles.emailInput} ${status === 'error' ? styles.emailInputError : ''} ${shake ? styles.emailInputShake : ''}`}
+          type="email"
+          placeholder="your@email.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          disabled={status === 'loading'}
+          autoComplete="email"
+        />
+        <button
+          type="submit"
+          className={styles.emailBtn}
+          disabled={status === 'loading'}
+        >
+          {status === 'loading' ? '...' : 'I need this'}
+        </button>
+      </form>
+    </div>
   )
 }
 

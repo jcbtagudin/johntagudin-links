@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useProducts, useAnalytics } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -86,8 +86,9 @@ export default function AdminPage() {
               { id: 'socials',   label: '📲 Socials' },
               { id: 'links',     label: '🔗 Links' },
               { id: 'products',  label: '🛍️ Products' },
-              { id: 'pinned',    label: '📌 Pinned' },
-              { id: 'analytics', label: '📊 Analytics' },
+              { id: 'pinned',       label: '📌 Pinned' },
+              { id: 'subscribers',  label: '👥 Subscribers' },
+              { id: 'analytics',    label: '📊 Analytics' },
             ].map(item => (
               <button
                 key={item.id}
@@ -119,8 +120,9 @@ export default function AdminPage() {
             {tab === 'socials'   && 'Social Links'}
             {tab === 'links'     && 'Link Sections'}
             {tab === 'products'  && 'Gumroad Products'}
-            {tab === 'pinned'    && 'Pinned Link'}
-            {tab === 'analytics' && 'Click Analytics'}
+            {tab === 'pinned'       && 'Pinned Link'}
+            {tab === 'subscribers'  && 'Subscribers'}
+            {tab === 'analytics'    && 'Click Analytics'}
           </div>
           {saved && <div style={s.savedBadge}>✓ Saved</div>}
         </div>
@@ -140,6 +142,9 @@ export default function AdminPage() {
           )}
           {tab === 'pinned' && (
             <PinnedTab onSaved={showSaved} />
+          )}
+          {tab === 'subscribers' && (
+            <SubscribersTab />
           )}
           {tab === 'analytics' && (
             <AnalyticsTab />
@@ -283,6 +288,59 @@ function ProfileTab({ profile, update, onSaved }) {
           <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0' }}>
             No video loaded — make sure <code style={{ color: 'var(--accent)' }}>YOUTUBE_API_KEY</code> and <code style={{ color: 'var(--accent)' }}>YOUTUBE_CHANNEL_ID</code> are set on Vercel.
           </div>
+        )}
+      </div>
+
+      {/* ── Email Capture Section ── */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>EMAIL CAPTURE</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Show a newsletter signup card above your footer</div>
+          </div>
+          <button
+            onClick={() => set('showEmailCapture', !form.showEmailCapture)}
+            style={{
+              width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer',
+              background: form.showEmailCapture ? 'var(--accent)' : 'var(--surface2)',
+              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3,
+              left: form.showEmailCapture ? 20 : 3,
+              width: 16, height: 16, borderRadius: '50%',
+              background: form.showEmailCapture ? '#000' : 'var(--muted)',
+              transition: 'left 0.2s',
+            }} />
+          </button>
+        </div>
+
+        {form.showEmailCapture && (
+          <>
+            <Field
+              label="CAPTURE HEADLINE"
+              value={form.captureHeadline || ''}
+              onChange={v => set('captureHeadline', v)}
+              placeholder="For when you're too tired to figure this out yourself"
+            />
+            <Field
+              label="CAPTURE SUBTEXT"
+              value={form.captureSubtext || ''}
+              onChange={v => set('captureSubtext', v)}
+              multiline
+              placeholder="I share AI tools, shortcuts, and workflows that actually save time — only when I find something worth sharing. No spam. No schedule."
+            />
+            <Field
+              label="SOCIAL PROOF LINE"
+              value={form.captureProof || ''}
+              onChange={v => set('captureProof', v)}
+              placeholder="Joined by 500K+ creators"
+            />
+          </>
         )}
       </div>
 
@@ -901,6 +959,107 @@ function PinnedTab({ onSaved }) {
       </div>
 
       <SaveBtn onClick={handleSave} />
+    </div>
+  )
+}
+
+// ─── SUBSCRIBERS TAB ─────────────────────────────────────────────────────────
+function SubscribersTab() {
+  const { subscribers, loading } = useSubscribers()
+  const [search, setSearch] = useState('')
+
+  if (loading) return <Loader />
+
+  const filtered = search.trim()
+    ? subscribers.filter(s => s.email?.toLowerCase().includes(search.trim().toLowerCase()))
+    : subscribers
+
+  const exportCSV = () => {
+    const header = 'Email,Date Joined'
+    const rows = subscribers.map(s => {
+      const date = s.subscribedAt?.toDate
+        ? s.subscribedAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
+        : s.subscribedAt || ''
+      return `${s.email},${date}`
+    })
+    const csv  = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = 'subscribers.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div style={{ ...s.tabBody, maxWidth: 680 }}>
+
+      {/* Big total count */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 16, padding: '28px 32px',
+        display: 'flex', alignItems: 'baseline', gap: 10,
+      }}>
+        <div style={{
+          fontFamily: "'SF Pro Display', -apple-system, sans-serif",
+          fontSize: 60, fontWeight: 800, lineHeight: 1, color: 'var(--text)', letterSpacing: -3,
+        }}>
+          {subscribers.length}
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--muted)', letterSpacing: 0.2 }}>subscribers</div>
+      </div>
+
+      {/* Search + Export */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          style={{ ...s.input, flex: 1 }}
+          placeholder="Search by email..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <button
+          style={{
+            ...s.iconBtn, padding: '10px 16px', fontSize: 12, fontWeight: 600,
+            border: '1px solid var(--border)', borderRadius: 8,
+            color: 'var(--text2)', background: 'var(--surface2)',
+          }}
+          onClick={exportCSV}
+        >
+          ↓ Export CSV
+        </button>
+      </div>
+
+      {/* Subscriber list */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+        {filtered.length === 0 ? (
+          <div style={{ padding: '32px 24px', color: 'var(--muted)', fontSize: 13, textAlign: 'center' }}>
+            {search ? 'No subscribers match your search.' : 'No subscribers yet — share your page to start building your list.'}
+          </div>
+        ) : (
+          filtered.map((sub, i) => {
+            const date = sub.subscribedAt?.toDate
+              ? sub.subscribedAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : sub.subscribedAt || '—'
+            return (
+              <div key={sub.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 20px',
+                borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+                background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)',
+              }}>
+                <span style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                  {sub.email}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0, marginLeft: 16 }}>
+                  {date}
+                </span>
+              </div>
+            )
+          })
+        )}
+      </div>
+
     </div>
   )
 }

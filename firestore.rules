@@ -20,5 +20,12 @@ service cloud.firestore {
       allow create: if true;
       allow read: if request.auth != null;
     }
+
+    // Email subscribers — anyone can subscribe, only John can read the list
+    match /subscribers/{doc} {
+      allow create: if true;
+      allow read, list: if request.auth != null
+        && request.auth.token.email == "johneilcarltagudin@gmail.com";
+    }
   }
 }
