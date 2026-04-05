@@ -952,3 +952,110 @@
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Email Capture Card ─────────────────────────────────────────────────────── */
+.emailCard {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  padding: 20px 24px 22px;
+  margin-bottom: 24px;
+  animation: fadeUp 0.5s 0.25s ease both;
+  position: relative;
+  z-index: 2;
+}
+
+.emailIcon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.emailHeadline {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  margin-bottom: 10px;
+}
+
+.emailSubtext {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 8px;
+}
+
+.emailProof {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  opacity: 0.65;
+  margin-bottom: 18px;
+}
+
+.emailForm {
+  display: flex;
+  gap: 8px;
+}
+
+.emailInput {
+  flex: 1;
+  min-width: 0;
+  background: #F7F5F2;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  font-family: var(--font-display);
+  transition: border-color 0.15s;
+}
+
+.emailInput:focus { border-color: var(--border2); }
+
+.emailInputError { border-color: #DC2626 !important; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.emailInputShake { animation: shake 0.5s ease; }
+
+.emailBtn {
+  flex-shrink: 0;
+  background: #0F0F0F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.emailBtn:hover    { opacity: 0.85; }
+.emailBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.emailSuccess {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: #22C55E;
+  text-align: center;
+  padding: 6px 0;
+}

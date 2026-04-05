@@ -192,6 +192,24 @@ export function useLinks() {
 }
 
 
+// ─── EMAIL SUBSCRIBERS ───────────────────────────────────────────────────────
+
+export function useSubscribers() {
+  const [subscribers, setSubscribers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const q = query(collection(db, 'subscribers'), orderBy('subscribedAt', 'desc'), limit(5000))
+    const unsub = onSnapshot(q, snap => {
+      setSubscribers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    }, () => setLoading(false))
+    return unsub
+  }, [])
+
+  return { subscribers, loading }
+}
+
 export function useAnalytics() {
   const [clicks, setClicks] = useState([])
   const [pageViews, setPageViews] = useState([])
