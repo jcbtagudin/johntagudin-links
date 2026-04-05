@@ -1,5 +1,5 @@
 // Vercel serverless function — handles email newsletter subscriptions
-// Flow: validate → save to Firestore → add to Resend Audience → send welcome email
+// Flow: check duplicate → save to Firestore → add to Resend Audience → send welcome email
 // Resend failures are silently caught — the email is always safe in Firestore first.
 
 export default async function handler(req, res) {
@@ -19,6 +19,35 @@ export default async function handler(req, res) {
   const cleanEmail = String(email).trim().toLowerCase()
   const projectId  = process.env.VITE_FIREBASE_PROJECT_ID
   const apiKey     = process.env.VITE_FIREBASE_API_KEY
+
+  // ── 0. Duplicate check — silently succeed if already subscribed ───────────
+  try {
+    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
+    const queryRes = await fetch(queryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'subscribers' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'email' },
+              op: 'EQUAL',
+              value: { stringValue: cleanEmail },
+            },
+          },
+          limit: 1,
+        },
+      }),
+    })
+    if (queryRes.ok) {
+      const results = await queryRes.json()
+      if (results[0]?.document) {
+        // Already subscribed — return success silently, no duplicate insert or email
+        return res.status(200).json({ success: true })
+      }
+    }
+  } catch (_) { /* If the check fails, continue and let the insert proceed */ }
 
   // ── 1. Save to Firestore — always do this first ───────────────────────────
   try {
