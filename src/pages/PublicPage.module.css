@@ -959,7 +959,7 @@
   border: 1px solid rgba(0,0,0,0.07);
   border-radius: 14px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  padding: 28px 24px 24px;
+  padding: 20px 24px 22px;
   margin-bottom: 24px;
   animation: fadeUp 0.5s 0.25s ease both;
   position: relative;
@@ -967,9 +967,9 @@
 }
 
 .emailIcon {
-  font-size: 28px;
+  font-size: 24px;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1;
 }
 
