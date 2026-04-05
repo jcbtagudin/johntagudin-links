@@ -553,7 +553,7 @@ function ProductsTab({ onSaved }) {
 
   const add = () => setItems(prev => [...prev, {
     id: uid(), name: '', description: '', price: 'Free',
-    url: '', thumbnailUrl: '', visible: true,
+    url: '', thumbnailUrl: '', visible: true, featured: false,
   }])
 
   const remove = (id) => setItems(prev => prev.filter(p => p.id !== id))
@@ -670,6 +670,9 @@ function SortableProductRow({ product, update, toggle, remove }) {
         </span>
 
         {/* Actions */}
+        {product.featured && (
+          <span title="Featured" style={{ fontSize: 13, lineHeight: 1 }}>⭐</span>
+        )}
         <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 4px' }} onClick={toggle}>
           {product.visible ? '👁' : '🚫'}
         </button>
@@ -715,6 +718,10 @@ function SortableProductRow({ product, update, toggle, remove }) {
             value={product.thumbnailUrl}
             onChange={e => update('thumbnailUrl', e.target.value)}
           />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text2)', gridColumn: '1 / -1' }}>
+            <input type="checkbox" checked={product.featured || false} onChange={e => update('featured', e.target.checked)} />
+            ⭐ Featured — dark card + vibrate animation
+          </label>
         </div>
       )}
     </div>
