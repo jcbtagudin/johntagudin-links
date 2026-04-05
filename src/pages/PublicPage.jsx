@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useProfile, useLinks, usePinned, useProducts, logClick } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
 
@@ -33,12 +33,54 @@ function useCursorHint() {
   return active
 }
 
+// Collects source/device/browser/OS/country once on mount, logs a page view
+function useVisitorMeta() {
+  const [meta, setMeta] = useState(() => {
+    const source = new URLSearchParams(window.location.search).get('ref') || 'direct'
+    const ua = navigator.userAgent
+    const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
+    const device   = isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop'
+    const browser  =
+      ua.includes('Chrome') && !ua.includes('Edg') ? 'chrome' :
+      ua.includes('Safari') && !ua.includes('Chrome') ? 'safari' :
+      ua.includes('Firefox') ? 'firefox' :
+      ua.includes('Edg') ? 'edge' : 'other'
+    const os =
+      ua.includes('iPhone') || ua.includes('iPad') ? 'ios' :
+      ua.includes('Android') ? 'android' :
+      ua.includes('Windows') ? 'windows' :
+      ua.includes('Mac') ? 'macos' :
+      ua.includes('Linux') ? 'linux' : 'other'
+    return { source, device, browser, os, country: 'unknown', countryCode: 'unknown' }
+  })
+
+  useEffect(() => {
+    const base = meta
+    fetch('https://ipapi.co/json/')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const full = {
+          ...base,
+          country:     data?.country_name || 'unknown',
+          countryCode: data?.country_code || 'unknown',
+        }
+        setMeta(full)
+        logPageView(full)
+      })
+      .catch(() => logPageView(base))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return meta
+}
+
 export default function PublicPage() {
   const { profile, loading: pl } = useProfile()
   const { data, loading: ll } = useLinks()
   const { pinned, loading: pinnedLoading } = usePinned()
   const { products, loading: productsLoading } = useProducts()
   const cursorActive = useCursorHint()
+  const meta = useVisitorMeta()
 
   if (pl || ll || pinnedLoading || productsLoading) return (
     <div className={styles.loadWrap}>
@@ -107,7 +149,7 @@ export default function PublicPage() {
                 target="_blank"
                 rel="noopener"
                 className={styles.pinnedCard}
-                onClick={() => logClick('pinned', pinned.title, 'pinned')}
+                onClick={() => logClick('pinned', pinned.title, 'pinned', meta)}
               >
                 {pinned.thumbnailUrl && (
                   <div className={styles.pinnedThumb}>
@@ -161,7 +203,7 @@ export default function PublicPage() {
                       target="_blank"
                       rel="noopener"
                       className={`${styles.card} ${link.featured ? styles.featured : ''}`}
-                      onClick={() => logClick(link.id, link.title, section.id)}
+                      onClick={() => logClick(link.id, link.title, section.id, meta)}
                     >
                       <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''}`}>
                         {link.icon}
@@ -346,7 +388,7 @@ function ProductsSection({ products, logClick, styles }) {
               target="_blank"
               rel="noopener"
               className={`${styles.productCardGrid} ${product.featured ? styles.featuredProduct : ''}`}
-              onClick={() => logClick(product.id, product.name, 'products')}
+              onClick={() => logClick(product.id, product.name, 'products', meta)}
             >
               <div className={styles.productThumbGrid}>
                 {product.thumbnailUrl
@@ -374,7 +416,7 @@ function ProductsSection({ products, logClick, styles }) {
               target="_blank"
               rel="noopener"
               className={`${styles.productCard} ${product.featured ? styles.featuredProduct : ''}`}
-              onClick={() => logClick(product.id, product.name, 'products')}
+              onClick={() => logClick(product.id, product.name, 'products', meta)}
             >
               <div className={styles.productThumb}>
                 {product.thumbnailUrl

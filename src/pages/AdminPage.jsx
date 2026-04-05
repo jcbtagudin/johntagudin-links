@@ -907,16 +907,19 @@ function PinnedTab({ onSaved }) {
 
 // ─── ANALYTICS TAB ───────────────────────────────────────────────────────────
 function AnalyticsTab() {
-  const { clicks, loading } = useAnalytics()
+  const { clicks, pageViews, loading } = useAnalytics()
   const [range, setRange] = useState('30')
 
   const days = range === 'all' ? 60 : parseInt(range)
 
-  const filtered = range === 'all' ? clicks : clicks.filter(c => {
+  const filterByTime = (arr) => range === 'all' ? arr : arr.filter(c => {
     if (!c.timestamp) return false
     const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
     return d > new Date(Date.now() - days * 86400000)
   })
+
+  const filtered   = filterByTime(clicks)
+  const filteredPV = filterByTime(pageViews)
 
   // Clicks by day for chart
   const byDay = {}
@@ -946,6 +949,40 @@ function AnalyticsTab() {
   const peakDay = Math.max(...Object.values(byDay), 0)
   const activeDays = Object.values(byDay).filter(v => v > 0).length
   const avgPerDay = activeDays > 0 ? (filtered.length / days).toFixed(1) : '0'
+
+  // ── New dimension aggregations ────────────────────────────────────────────
+  const aggregate = (arr, key) => {
+    const map = {}
+    arr.forEach(c => { const v = c[key] || 'unknown'; map[v] = (map[v] || 0) + 1 })
+    return Object.entries(map).sort((a, b) => b[1] - a[1])
+  }
+
+  const bySource  = aggregate(filtered, 'source')
+  const byDevice  = aggregate(filtered, 'device')
+  const byBrowser = aggregate(filtered, 'browser')
+  const byOS      = aggregate(filtered, 'os')
+
+  const byCountryRaw = {}
+  filtered.forEach(c => {
+    if (!c.country || c.country === 'unknown') return
+    if (!byCountryRaw[c.country]) byCountryRaw[c.country] = { count: 0, code: c.countryCode || '' }
+    byCountryRaw[c.country].count++
+  })
+  const byCountry = Object.entries(byCountryRaw)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+
+  const flagEmoji = (code) => {
+    if (!code || code.length !== 2) return '🌐'
+    return String.fromCodePoint(
+      ...code.toUpperCase().split('').map(c => 0x1F1E0 + c.charCodeAt(0) - 65)
+    )
+  }
+
+  const SOURCE_ICONS = {
+    tiktok: '🎵', facebook: '📘', instagram: '📸', youtube: '▶️',
+    twitter: '𝕏', threads: '🧵', linkedin: '💼', email: '📧', direct: '🔗', unknown: '🔗',
+  }
 
   // Date range label
   const startDate = new Date(Date.now() - (days - 1) * 86400000)
@@ -982,7 +1019,9 @@ function AnalyticsTab() {
         {/* Stats row — inspired by the reference layout */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
           {[
-            { label: 'Total Clicks', value: filtered.length, accent: true },
+            { label: 'Page Views',   value: filteredPV.length, accent: true },
+            { label: 'Total Clicks', value: filtered.length },
+            { label: 'Conv. Rate',   value: filteredPV.length > 0 ? `${((filtered.length / filteredPV.length) * 100).toFixed(1)}%` : '—' },
             { label: 'Unique Links',  value: sorted.length },
             { label: 'Today',         value: clicksToday },
             { label: 'Peak Day',      value: peakDay },
@@ -1072,6 +1111,114 @@ function AnalyticsTab() {
         </div>
 
       </div>
+
+      {/* ── Dimension cards ── */}
+      {filtered.length > 0 && (() => {
+        const cardStyle = {
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 16, overflow: 'hidden', marginTop: 16,
+        }
+        const headerStyle = {
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '14px 24px 10px',
+          borderBottom: '1px solid var(--border)',
+        }
+        const rowStyle = (i) => ({
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '10px 24px',
+          borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+        })
+        const bar = (count, max) => (
+          <div style={{ flex: 1, height: 4, background: 'var(--surface2)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 99,
+              width: `${max > 0 ? (count / max) * 100 : 0}%`,
+              background: 'var(--accent)', transition: 'width 0.4s ease',
+            }} />
+          </div>
+        )
+
+        return (
+          <>
+            {/* Traffic Sources */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Traffic Sources</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+              </div>
+              {bySource.map(([src, count], i) => (
+                <div key={src} style={rowStyle(i)}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>
+                    {SOURCE_ICONS[src] || '🔗'}
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{src}</span>
+                  {bar(count, bySource[0]?.[1] || 1)}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Devices */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Devices</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+              </div>
+              {byDevice.map(([device, count], i) => {
+                const icon = device === 'mobile' ? '📱' : device === 'desktop' ? '🖥' : device === 'tablet' ? '📟' : '❓'
+                const pct = filtered.length > 0 ? `${((count / filtered.length) * 100).toFixed(1)}%` : '—'
+                return (
+                  <div key={device} style={rowStyle(i)}>
+                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{device}</span>
+                    {bar(count, byDevice[0]?.[1] || 1)}
+                    <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 40, textAlign: 'right' }}>{pct}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Top Countries */}
+            {byCountry.length > 0 && (
+              <div style={cardStyle}>
+                <div style={headerStyle}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Top Countries</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+                </div>
+                {byCountry.map(([country, { count, code }], i) => (
+                  <div key={country} style={rowStyle(i)}>
+                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{flagEmoji(code)}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', width: 130, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{country}</span>
+                    {bar(count, byCountry[0]?.[1]?.count || 1)}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Browsers */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Browsers</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+              </div>
+              {byBrowser.map(([browser, count], i) => {
+                const icon = browser === 'chrome' ? '🟡' : browser === 'safari' ? '🔵' : browser === 'firefox' ? '🟠' : browser === 'edge' ? '🟦' : '🌐'
+                return (
+                  <div key={browser} style={rowStyle(i)}>
+                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{browser}</span>
+                    {bar(count, byBrowser[0]?.[1] || 1)}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )
+      })()}
+
     </div>
   )
 }

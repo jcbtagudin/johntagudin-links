@@ -130,17 +130,39 @@ export function usePinned() {
 
 // ─── CLICK ANALYTICS ─────────────────────────────────────────────────────────
 
-export async function logClick(linkId, linkTitle, sectionId) {
+export async function logClick(linkId, linkTitle, sectionId, metadata = {}) {
   try {
     await addDoc(collection(db, 'clicks'), {
       linkId,
       linkTitle,
       sectionId,
+      source:      metadata.source      || 'direct',
+      device:      metadata.device      || 'unknown',
+      browser:     metadata.browser     || 'unknown',
+      os:          metadata.os          || 'unknown',
+      country:     metadata.country     || 'unknown',
+      countryCode: metadata.countryCode || 'unknown',
+      date: new Date().toISOString().slice(0, 10),
       timestamp: serverTimestamp(),
     })
   } catch (_) {
     // Silently fail — analytics should never break the public page
   }
+}
+
+export async function logPageView(metadata = {}) {
+  try {
+    await addDoc(collection(db, 'pageviews'), {
+      source:      metadata.source      || 'direct',
+      device:      metadata.device      || 'unknown',
+      browser:     metadata.browser     || 'unknown',
+      os:          metadata.os          || 'unknown',
+      country:     metadata.country     || 'unknown',
+      countryCode: metadata.countryCode || 'unknown',
+      date: new Date().toISOString().slice(0, 10),
+      timestamp: serverTimestamp(),
+    })
+  } catch (_) {}
 }
 
 export function useLinks() {
@@ -172,22 +194,30 @@ export function useLinks() {
 
 export function useAnalytics() {
   const [clicks, setClicks] = useState([])
+  const [pageViews, setPageViews] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'clicks'),
-      orderBy('timestamp', 'desc'),
-      limit(5000)
-    )
-    const unsub = onSnapshot(q, snap => {
+    let clicksDone = false
+    let pvDone = false
+    const tryDone = () => { if (clicksDone && pvDone) setLoading(false) }
+
+    const q1 = query(collection(db, 'clicks'), orderBy('timestamp', 'desc'), limit(5000))
+    const unsub1 = onSnapshot(q1, snap => {
       setClicks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-      setLoading(false)
+      clicksDone = true; tryDone()
     })
-    return unsub
+
+    const q2 = query(collection(db, 'pageviews'), orderBy('timestamp', 'desc'), limit(5000))
+    const unsub2 = onSnapshot(q2, snap => {
+      setPageViews(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      pvDone = true; tryDone()
+    })
+
+    return () => { unsub1(); unsub2() }
   }, [])
 
-  return { clicks, loading }
+  return { clicks, pageViews, loading }
 }
 
 // ─── GUMROAD PRODUCTS ────────────────────────────────────────────────────────
