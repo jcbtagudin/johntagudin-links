@@ -168,6 +168,7 @@ function ProfileTab({ profile, update, onSaved }) {
       )}
       <Field label="Bio" value={form.bio} onChange={v => set('bio', v)} multiline />
       <Field label="Bio Highlight Word (gets colored accent)" value={form.bioHighlight} onChange={v => set('bioHighlight', v)} placeholder="e.g. AI tools" />
+      <Field label="Status Badge (e.g. Creating, Available, etc. — leave blank to hide)" value={form.status || ''} onChange={v => set('status', v)} placeholder="e.g. Creating" />
       <Field label="Footer Text" value={form.footerText} onChange={v => set('footerText', v)} />
       <Field label="Contact Email" value={form.email} onChange={v => set('email', v)} />
       <SaveBtn onClick={save} />

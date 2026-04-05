@@ -40,13 +40,20 @@ export default function PublicPage() {
         {/* HERO */}
         <div className={styles.hero}>
           <div className={styles.avatarWrap}>
+            <div className={styles.avatarRing} />
+            <div className={styles.avatarRingGlow} />
             <div className={styles.avatar}>
               {profile.avatarUrl
                 ? <img src={profile.avatarUrl} alt={profile.name} onError={e => e.target.style.display = 'none'} />
                 : null}
               <span className={styles.avatarFallback}>JT</span>
             </div>
-            <div className={styles.statusDot} />
+            {profile.status && (
+              <div className={styles.statusBadge}>
+                <span className={styles.statusDot} />
+                {profile.status}
+              </div>
+            )}
           </div>
           <div className={styles.name}>{profile.name}</div>
           <div className={styles.handle}>{profile.handle}</div>

@@ -56,7 +56,55 @@
 .avatarWrap {
   position: relative;
   display: inline-block;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
+}
+
+/* Rotating glowing arc ring */
+.avatarRing {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 55%,
+    rgba(232,255,87,0.25) 68%,
+    rgba(232,255,87,0.9) 80%,
+    var(--accent) 88%,
+    rgba(232,255,87,0.9) 96%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px));
+  animation: spinRing 3s linear infinite;
+  z-index: 2;
+}
+
+/* Blurred duplicate for glow effect */
+.avatarRingGlow {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    transparent 55%,
+    rgba(232,255,87,0.1) 68%,
+    rgba(232,255,87,0.5) 80%,
+    rgba(232,255,87,0.6) 88%,
+    rgba(232,255,87,0.5) 96%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 7px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 7px));
+  animation: spinRing 3s linear infinite;
+  filter: blur(4px);
+  z-index: 1;
+}
+
+@keyframes spinRing {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 .avatar {
@@ -64,12 +112,13 @@
   height: 88px;
   border-radius: 50%;
   background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
-  border: 2px solid var(--border);
+  border: 2px solid rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
+  z-index: 3;
 }
 
 .avatar img {
@@ -89,21 +138,39 @@
   z-index: 0;
 }
 
-.statusDot {
+/* Status badge pill */
+.statusBadge {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 14px;
-  height: 14px;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 7px;
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  z-index: 4;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
   background: #22c55e;
   border-radius: 50%;
-  border: 2px solid var(--bg);
+  flex-shrink: 0;
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.15); }
+  50% { opacity: 0.7; transform: scale(1.2); }
 }
 
 .name {

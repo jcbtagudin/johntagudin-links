@@ -19,6 +19,7 @@ const DEFAULT_PROFILE = {
   avatarUrl: 'https://framerusercontent.com/images/pr8jf2nk4dZcnTuIcpLEnUZpHg.png',
   email: 'john@johntagudin.com',
   footerText: 'For brand collabs & partnerships',
+  status: 'Creating',
 }
 
 const DEFAULT_LINKS = {
