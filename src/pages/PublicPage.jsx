@@ -161,7 +161,7 @@ export default function PublicPage() {
                         <div className={styles.productDesc}>{product.description}</div>
                       </div>
                       <div className={styles.productMeta}>
-                        <span className={priceWhite ? styles.productPriceWhite : styles.productPrice}>
+                        <span className={getPriceClass(product.price)}>
                           {product.price || 'Free'}
                         </span>
                         <span className={styles.productBtn}>Get it →</span>
