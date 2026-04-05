@@ -574,7 +574,7 @@ function ProductsTab({ onSaved }) {
     ...s.iconBtn,
     padding: '7px 14px', fontSize: 12, borderRadius: 8,
     border: '1px solid var(--border)',
-    background: active ? 'rgba(232,255,87,0.08)' : 'var(--surface2)',
+    background: active ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
     color: active ? 'var(--accent)' : 'var(--text2)',
     fontWeight: active ? 600 : 400,
   })
@@ -1057,7 +1057,7 @@ function PinnedCardPreview({ pinned }) {
           {badge.label}
         </span>
       )}
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: 'var(--accent)', flexShrink: 0 }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: 'var(--muted)', flexShrink: 0 }}>
         <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     </div>
@@ -1091,12 +1091,12 @@ function AreaChart({ data }) {
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 130, display: 'block' }}>
       <defs>
         <linearGradient id="clicksGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e8ff57" stopOpacity="0.22" />
-          <stop offset="85%" stopColor="#e8ff57" stopOpacity="0" />
+          <stop offset="0%" stopColor="#4A7C40" stopOpacity="0.25" />
+          <stop offset="85%" stopColor="#4A7C40" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={areaPath} fill="url(#clicksGrad)" />
-      <path d={linePath} fill="none" stroke="#e8ff57" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={linePath} fill="none" stroke="#4A7C40" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -1143,14 +1143,14 @@ const s = {
     padding: '10px 12px', color: 'var(--text2)', fontSize: 13,
     fontWeight: 500, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
   },
-  navActive: { background: 'rgba(232,255,87,0.08)', color: 'var(--accent)' },
+  navActive: { background: 'rgba(74,124,64,0.1)', color: 'var(--accent)', fontWeight: 600 },
   sideBottom: { display: 'flex', flexDirection: 'column' },
   userInfo: { display: 'flex', alignItems: 'center', gap: 8 },
   userAvatar: { width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' },
   userEmail: { fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   previewBtn: {
     flex: 1, padding: '8px 0',
-    background: 'rgba(232,255,87,0.08)', border: '1px solid rgba(232,255,87,0.15)',
+    background: 'rgba(74,124,64,0.08)', border: '1px solid rgba(74,124,64,0.2)',
     borderRadius: 8, color: 'var(--accent)', fontSize: 12, fontWeight: 500,
     textAlign: 'center', cursor: 'pointer',
   },
@@ -1187,7 +1187,7 @@ const s = {
   },
   saveBtn: {
     marginTop: 8, padding: '12px 24px', background: 'var(--accent)',
-    border: 'none', borderRadius: 10, color: '#0a0a0a',
+    border: 'none', borderRadius: 10, color: '#FFFFFF',
     fontSize: 14, fontWeight: 700, cursor: 'pointer',
     fontFamily: 'Syne, sans-serif', alignSelf: 'flex-start',
   },
