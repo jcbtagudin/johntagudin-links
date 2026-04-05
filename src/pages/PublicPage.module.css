@@ -360,6 +360,28 @@
   color: var(--accent);
 }
 
+/* SHOW MORE */
+.showMoreBtn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+.showMoreBtn:hover {
+  border-color: rgba(232,255,87,0.3);
+  color: var(--accent);
+}
+
 /* PINNED */
 .pinnedSection {
   margin-bottom: 28px;

@@ -188,6 +188,7 @@ export function useAnalytics() {
 
 const DEFAULT_PRODUCTS = {
   layout: 'rows', // 'rows' | 'grid'
+  title: 'My Products',
   items: [
     {
       id: 'gp1',

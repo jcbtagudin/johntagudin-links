@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useProfile, useLinks, usePinned, useProducts, logClick } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
@@ -96,83 +96,7 @@ export default function PublicPage() {
         )}
 
         {/* PRODUCTS */}
-        {(() => {
-          const visibleProducts = products?.items?.filter(p => p.visible) || []
-          if (!visibleProducts.length) return null
-          const isGrid = products?.layout === 'grid'
-          // Auto: if price contains any digit → white; otherwise (Free, etc.) → accent
-          const getPriceClass = (price) => /\d/.test(price) ? styles.productPriceWhite : styles.productPrice
-
-          return (
-            <div className={styles.productsSection}>
-              <div className={styles.sectionLabel}>🛍️ My Products</div>
-
-              {isGrid ? (
-                /* ── GRID LAYOUT ── */
-                <div className={styles.productsGrid}>
-                  {visibleProducts.map(product => (
-                    <a
-                      key={product.id}
-                      href={product.url}
-                      target="_blank"
-                      rel="noopener"
-                      className={styles.productCardGrid}
-                      onClick={() => logClick(product.id, product.name, 'products')}
-                    >
-                      <div className={styles.productThumbGrid}>
-                        {product.thumbnailUrl
-                          ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
-                          : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
-                        }
-                      </div>
-                      <div className={styles.productInfoGrid}>
-                        <div className={styles.productNameGrid}>{product.name}</div>
-                        <div className={styles.productDescGrid}>{product.description}</div>
-                        <div className={styles.productMetaGrid}>
-                          <span className={getPriceClass(product.price)}>
-                            {product.price || 'Free'}
-                          </span>
-                          <span className={styles.productBtn}>Get it →</span>
-                        </div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                /* ── ROW LAYOUT ── */
-                <div className={styles.productsStack}>
-                  {visibleProducts.map(product => (
-                    <a
-                      key={product.id}
-                      href={product.url}
-                      target="_blank"
-                      rel="noopener"
-                      className={styles.productCard}
-                      onClick={() => logClick(product.id, product.name, 'products')}
-                    >
-                      <div className={styles.productThumb}>
-                        {product.thumbnailUrl
-                          ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
-                          : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
-                        }
-                      </div>
-                      <div className={styles.productInfo}>
-                        <div className={styles.productName}>{product.name}</div>
-                        <div className={styles.productDesc}>{product.description}</div>
-                      </div>
-                      <div className={styles.productMeta}>
-                        <span className={getPriceClass(product.price)}>
-                          {product.price || 'Free'}
-                        </span>
-                        <span className={styles.productBtn}>Get it →</span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })()}
+        <ProductsSection products={products} logClick={logClick} styles={styles} />
 
         {/* SECTIONS */}
         {visibleSections.map(section => {
@@ -225,6 +149,92 @@ export default function PublicPage() {
         <a href="/admin" className={styles.adminLink}>⚙</a>
 
       </div>
+    </div>
+  )
+}
+
+const COLLAPSE_THRESHOLD = 3
+
+function ProductsSection({ products, logClick, styles }) {
+  const [expanded, setExpanded] = useState(false)
+  const visibleProducts = products?.items?.filter(p => p.visible) || []
+  if (!visibleProducts.length) return null
+
+  const isGrid = products?.layout === 'grid'
+  const sectionTitle = products?.title || 'My Products'
+  const getPriceClass = (price) => /\d/.test(price) ? styles.productPriceWhite : styles.productPrice
+  const hasMore = visibleProducts.length > COLLAPSE_THRESHOLD
+  const shown = hasMore && !expanded ? visibleProducts.slice(0, COLLAPSE_THRESHOLD) : visibleProducts
+
+  return (
+    <div className={styles.productsSection}>
+      <div className={styles.sectionLabel}>🛍️ {sectionTitle}</div>
+
+      {isGrid ? (
+        <div className={styles.productsGrid}>
+          {shown.map(product => (
+            <a
+              key={product.id}
+              href={product.url}
+              target="_blank"
+              rel="noopener"
+              className={styles.productCardGrid}
+              onClick={() => logClick(product.id, product.name, 'products')}
+            >
+              <div className={styles.productThumbGrid}>
+                {product.thumbnailUrl
+                  ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                  : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                }
+              </div>
+              <div className={styles.productInfoGrid}>
+                <div className={styles.productNameGrid}>{product.name}</div>
+                <div className={styles.productDescGrid}>{product.description}</div>
+                <div className={styles.productMetaGrid}>
+                  <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
+                  <span className={styles.productBtn}>Get it →</span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div className={styles.productsStack}>
+          {shown.map(product => (
+            <a
+              key={product.id}
+              href={product.url}
+              target="_blank"
+              rel="noopener"
+              className={styles.productCard}
+              onClick={() => logClick(product.id, product.name, 'products')}
+            >
+              <div className={styles.productThumb}>
+                {product.thumbnailUrl
+                  ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                  : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                }
+              </div>
+              <div className={styles.productInfo}>
+                <div className={styles.productName}>{product.name}</div>
+                <div className={styles.productDesc}>{product.description}</div>
+              </div>
+              <div className={styles.productMeta}>
+                <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
+                <span className={styles.productBtn}>Get it →</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {hasMore && (
+        <button className={styles.showMoreBtn} onClick={() => setExpanded(e => !e)}>
+          {expanded
+            ? 'Show less ▲'
+            : `Show ${visibleProducts.length - COLLAPSE_THRESHOLD} more ▼`}
+        </button>
+      )}
     </div>
   )
 }

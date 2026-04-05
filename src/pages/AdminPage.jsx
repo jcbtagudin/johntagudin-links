@@ -467,19 +467,21 @@ function ProductsTab({ onSaved }) {
   const { products, loading, save } = useProducts()
   const [items, setItems] = useState(null)
   const [layout, setLayout] = useState('rows')
+  const [title, setTitle] = useState('My Products')
   const sensors = useSensors(useSensor(PointerSensor))
 
   React.useEffect(() => {
     if (products && !items) {
       setItems(products.items || [])
       setLayout(products.layout || 'rows')
+      setTitle(products.title || 'My Products')
     }
   }, [products])
 
   if (loading || !items) return <Loader />
 
   const saveAll = async () => {
-    await save({ items, layout })
+    await save({ items, layout, title })
     onSaved()
   }
 
@@ -520,6 +522,16 @@ function ProductsTab({ onSaved }) {
         borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
       }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>DISPLAY SETTINGS</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Section title</span>
+          <input
+            style={{ ...s.input, flex: 1, height: 32, fontSize: 12 }}
+            placeholder="My Products"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+          />
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Layout</span>
