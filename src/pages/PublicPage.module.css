@@ -5,7 +5,11 @@
   padding: 0 16px 60px;
   position: relative;
   overflow-x: hidden;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(0,0,0,0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 .glow { display: none; }
@@ -44,69 +48,23 @@
 }
 
 .avatarWrap {
-  position: relative;
   display: inline-block;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
-.avatarRing {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    transparent 55%,
-    rgba(74,124,64,0.2) 68%,
-    rgba(74,124,64,0.85) 80%,
-    #4A7C40 88%,
-    rgba(74,124,64,0.85) 96%,
-    transparent 100%
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff calc(100% - 3px));
-  animation: spinRing 3s linear infinite;
-  z-index: 2;
-}
-
-.avatarRingGlow {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0%,
-    transparent 55%,
-    rgba(74,124,64,0.08) 68%,
-    rgba(74,124,64,0.35) 80%,
-    rgba(74,124,64,0.45) 88%,
-    rgba(74,124,64,0.35) 96%,
-    transparent 100%
-  );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 7px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #fff calc(100% - 7px));
-  animation: spinRing 3s linear infinite;
-  filter: blur(4px);
-  z-index: 1;
-}
-
-@keyframes spinRing {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
+/* Clean circle — no ring, no animation */
 .avatar {
-  width: 88px;
-  height: 88px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   background: var(--surface2);
-  border: 2px solid var(--border);
+  border: 2.5px solid var(--border2);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
-  z-index: 3;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 .avatar img {
@@ -115,35 +73,29 @@
   object-fit: cover;
   position: absolute;
   inset: 0;
-  z-index: 1;
 }
 
 .avatarFallback {
-  font-family: var(--font-display);
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text2);
-  z-index: 0;
 }
 
+/* Status badge — centered pill below name */
 .statusBadge {
-  position: absolute;
-  bottom: -14px;
-  left: 60%;
-  transform: translateX(-40%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px 4px 7px;
+  gap: 6px;
+  padding: 5px 12px 5px 9px;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 100px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text2);
   white-space: nowrap;
-  z-index: 4;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
 
 .statusDot {
@@ -161,12 +113,11 @@
 }
 
 .name {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 30px;
+  font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .handle {
