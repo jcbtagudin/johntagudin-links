@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     res.setHeader('X-Cache', 'MISS')
     return res.status(200).json(video)
   } catch (err) {
-    // Return error detail so we can debug — will switch back to silent after fix
-    return res.status(200).json({ error: 'fetch_failed', detail: err.message })
+    // Always return 200 so the browser doesn't log a red error
+    return res.status(200).json({ error: 'fetch_failed' })
   }
 }
