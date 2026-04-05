@@ -2,11 +2,11 @@ import React, { useState, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks } from '../hooks/useData'
+import { useProfile, useLinks, useAnalytics } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors
 } from '@dnd-kit/core'
 import {
   SortableContext, verticalListSortingStrategy, useSortable, arrayMove
@@ -15,6 +15,29 @@ import { CSS } from '@dnd-kit/utilities'
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 const uid = () => Math.random().toString(36).slice(2, 9)
+
+function getScheduleStatus(link) {
+  const now = new Date()
+  if (!link.startDate && !link.endDate) return 'Always On'
+  if (link.startDate && new Date(link.startDate) > now) return 'Scheduled'
+  if (link.endDate && new Date(link.endDate) < now) return 'Expired'
+  return 'Live'
+}
+
+function scheduleStatusStyle(link) {
+  const status = getScheduleStatus(link)
+  const map = {
+    'Always On': { color: 'var(--muted)' },
+    'Scheduled':  { color: '#60a5fa', background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.2)' },
+    'Live':       { color: 'var(--green)', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' },
+    'Expired':    { color: 'var(--red)', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' },
+  }
+  return {
+    fontSize: 10, fontWeight: 700, padding: '2px 7px',
+    borderRadius: 4, letterSpacing: 0.3,
+    ...(map[status] || map['Always On']),
+  }
+}
 
 // ─── ADMIN PAGE ─────────────────────────────────────────────────────────────
 export default function AdminPage() {
@@ -37,6 +60,20 @@ export default function AdminPage() {
 
   if (!profile || !linksData) return <Loader />
 
+  const NAV = [
+    { id: 'profile',   label: '👤 Profile' },
+    { id: 'socials',   label: '📲 Socials' },
+    { id: 'links',     label: '🔗 Links' },
+    { id: 'analytics', label: '📊 Analytics' },
+  ]
+
+  const HEADER_TITLES = {
+    profile:   'Profile Settings',
+    socials:   'Social Links',
+    links:     'Link Sections',
+    analytics: 'Click Analytics',
+  }
+
   return (
     <div style={s.page}>
       {/* SIDEBAR */}
@@ -44,11 +81,7 @@ export default function AdminPage() {
         <div style={s.sideTop}>
           <div style={s.logo}>⚙ Admin</div>
           <nav style={s.nav}>
-            {[
-              { id: 'profile', label: '👤 Profile' },
-              { id: 'socials', label: '📲 Socials' },
-              { id: 'links',   label: '🔗 Links' },
-            ].map(item => (
+            {NAV.map(item => (
               <button
                 key={item.id}
                 style={{ ...s.navBtn, ...(tab === item.id ? s.navActive : {}) }}
@@ -74,11 +107,7 @@ export default function AdminPage() {
       {/* MAIN */}
       <main style={s.main}>
         <div style={s.header}>
-          <div style={s.headerTitle}>
-            {tab === 'profile' && 'Profile Settings'}
-            {tab === 'socials' && 'Social Links'}
-            {tab === 'links' && 'Link Sections'}
-          </div>
+          <div style={s.headerTitle}>{HEADER_TITLES[tab]}</div>
           {saved && <div style={s.savedBadge}>✓ Saved</div>}
         </div>
 
@@ -92,6 +121,9 @@ export default function AdminPage() {
           {tab === 'links' && (
             <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />
           )}
+          {tab === 'analytics' && (
+            <AnalyticsTab />
+          )}
         </div>
       </main>
     </div>
@@ -101,13 +133,8 @@ export default function AdminPage() {
 // ─── PROFILE TAB ─────────────────────────────────────────────────────────────
 function ProfileTab({ profile, update, onSaved }) {
   const [form, setForm] = useState({ ...profile })
-
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  const save = async () => {
-    await update(form)
-    onSaved()
-  }
+  const save = async () => { await update(form); onSaved() }
 
   return (
     <div style={s.tabBody}>
@@ -133,11 +160,7 @@ function SocialsTab({ data, save, onSaved }) {
   const [socials, setSocials] = useState(data.socials || [])
   const sensors = useSensors(useSensor(PointerSensor))
 
-  const saveAll = async () => {
-    await save({ ...data, socials })
-    onSaved()
-  }
-
+  const saveAll = async () => { await save({ ...data, socials }); onSaved() }
   const add = () => setSocials(s => [...s, { id: uid(), label: '', url: '', icon: 'website', visible: true }])
   const remove = (id) => setSocials(s => s.filter(x => x.id !== id))
   const update = (id, k, v) => setSocials(s => s.map(x => x.id === id ? { ...x, [k]: v } : x))
@@ -171,30 +194,20 @@ function SocialsTab({ data, save, onSaved }) {
 
 function SortableSocialRow({ item, update, toggle, remove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
   return (
     <div ref={setNodeRef} style={{ ...s.row, ...style }}>
       <span {...attributes} {...listeners} style={s.drag}>⠿</span>
       <div style={s.rowFields}>
-        <select
-          value={item.icon}
-          onChange={e => update(item.id, 'icon', e.target.value)}
-          style={s.select}
-        >
-          {SOCIAL_ICON_OPTIONS.map(o => (
-            <option key={o} value={o}>{o}</option>
-          ))}
+        <select value={item.icon} onChange={e => update(item.id, 'icon', e.target.value)} style={s.select}>
+          {SOCIAL_ICON_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
         <input style={s.input} placeholder="Label (e.g. 183K TikTok)" value={item.label} onChange={e => update(item.id, 'label', e.target.value)} />
         <input style={s.input} placeholder="URL" value={item.url} onChange={e => update(item.id, 'url', e.target.value)} />
       </div>
       <div style={s.rowActions}>
-        <button style={{ ...s.iconBtn, color: item.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={() => toggle(item.id)} title="Toggle visibility">
+        <button style={{ ...s.iconBtn, color: item.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={() => toggle(item.id)}>
           {item.visible ? '👁' : '🚫'}
         </button>
         <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => remove(item.id)}>✕</button>
@@ -209,10 +222,7 @@ function LinksTab({ data, save, onSaved }) {
   const [expandedSection, setExpandedSection] = useState(null)
   const sensors = useSensors(useSensor(PointerSensor))
 
-  const saveAll = async () => {
-    await save({ ...data, sections })
-    onSaved()
-  }
+  const saveAll = async () => { await save({ ...data, sections }); onSaved() }
 
   const addSection = () => {
     const id = uid()
@@ -227,20 +237,21 @@ function LinksTab({ data, save, onSaved }) {
   const addLink = (sectionId) => {
     setSections(s => s.map(sec => sec.id === sectionId ? {
       ...sec,
-      links: [...(sec.links || []), { id: uid(), title: '', subtitle: '', url: '', icon: '🔗', badge: '', featured: false, visible: true }]
+      links: [...(sec.links || []), {
+        id: uid(), title: '', subtitle: '', url: '',
+        icon: '🔗', badge: '', featured: false, visible: true,
+        startDate: '', endDate: '',
+      }]
     } : sec))
   }
 
-  const removeLink = (sectionId, linkId) => {
+  const removeLink = (sectionId, linkId) =>
     setSections(s => s.map(sec => sec.id === sectionId ? { ...sec, links: sec.links.filter(l => l.id !== linkId) } : sec))
-  }
 
-  const updateLink = (sectionId, linkId, k, v) => {
+  const updateLink = (sectionId, linkId, k, v) =>
     setSections(s => s.map(sec => sec.id === sectionId ? {
-      ...sec,
-      links: sec.links.map(l => l.id === linkId ? { ...l, [k]: v } : l)
+      ...sec, links: sec.links.map(l => l.id === linkId ? { ...l, [k]: v } : l)
     } : sec))
-  }
 
   const onDragEnd = ({ active, over }) => {
     if (active.id !== over?.id) {
@@ -342,11 +353,14 @@ function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onTog
 function SortableLinkRow({ link, onUpdate, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+  const [showSchedule, setShowSchedule] = useState(!!(link.startDate || link.endDate))
 
   return (
     <div ref={setNodeRef} style={{ ...s.linkRow, ...style }}>
       <span {...attributes} {...listeners} style={s.drag}>⠿</span>
       <div style={s.linkFields}>
+
+        {/* Row 1: icon, title, badge */}
         <div style={{ display: 'flex', gap: 8 }}>
           <input style={{ ...s.input, width: 60 }} placeholder="Icon" value={link.icon} onChange={e => onUpdate('icon', e.target.value)} title="Emoji icon" />
           <input style={{ ...s.input, flex: 1 }} placeholder="Title" value={link.title} onChange={e => onUpdate('title', e.target.value)} />
@@ -357,21 +371,283 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
             <option value="hot">Hot</option>
           </select>
         </div>
+
+        {/* Row 2: subtitle */}
         <input style={s.input} placeholder="Subtitle / description" value={link.subtitle} onChange={e => onUpdate('subtitle', e.target.value)} />
+
+        {/* Row 3: URL */}
         <input style={s.input} placeholder="URL (https://...)" value={link.url} onChange={e => onUpdate('url', e.target.value)} />
+
+        {/* Row 4: checkboxes + schedule toggle */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
             <input type="checkbox" checked={link.featured} onChange={e => onUpdate('featured', e.target.checked)} />
-            Featured (accent style)
+            Featured
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
             <input type="checkbox" checked={link.visible} onChange={e => onUpdate('visible', e.target.checked)} />
             Visible
           </label>
+          <button
+            style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, marginLeft: 'auto' }}
+            onClick={() => setShowSchedule(v => !v)}
+          >
+            🗓 Schedule {showSchedule ? '▲' : '▼'}
+          </button>
+          {(link.startDate || link.endDate) && (
+            <span style={scheduleStatusStyle(link)}>{getScheduleStatus(link)}</span>
+          )}
         </div>
+
+        {/* Schedule fields */}
+        {showSchedule && (
+          <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+              Leave blank to always show. Set dates to control when this link is visible on your public page.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 4, fontWeight: 600 }}>START DATE</div>
+                <input
+                  type="datetime-local"
+                  style={{ ...s.input, fontSize: 12 }}
+                  value={link.startDate || ''}
+                  onChange={e => onUpdate('startDate', e.target.value)}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 4, fontWeight: 600 }}>END DATE</div>
+                <input
+                  type="datetime-local"
+                  style={{ ...s.input, fontSize: 12 }}
+                  value={link.endDate || ''}
+                  onChange={e => onUpdate('endDate', e.target.value)}
+                />
+              </div>
+            </div>
+            {(link.startDate || link.endDate) && (
+              <button
+                style={{ ...s.iconBtn, fontSize: 11, color: 'var(--muted)', alignSelf: 'flex-start', padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6 }}
+                onClick={() => { onUpdate('startDate', ''); onUpdate('endDate', '') }}
+              >
+                Clear schedule
+              </button>
+            )}
+          </div>
+        )}
+
       </div>
       <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={onRemove}>✕</button>
     </div>
+  )
+}
+
+// ─── ANALYTICS TAB ───────────────────────────────────────────────────────────
+function AnalyticsTab() {
+  const { clicks, loading } = useAnalytics()
+  const [range, setRange] = useState('30')
+
+  const days = range === 'all' ? 60 : parseInt(range)
+
+  const filtered = range === 'all' ? clicks : clicks.filter(c => {
+    if (!c.timestamp) return false
+    const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
+    return d > new Date(Date.now() - days * 86400000)
+  })
+
+  // Clicks by day for chart
+  const byDay = {}
+  for (let i = days - 1; i >= 0; i--) {
+    const key = new Date(Date.now() - i * 86400000).toISOString().split('T')[0]
+    byDay[key] = 0
+  }
+  filtered.forEach(c => {
+    if (!c.timestamp) return
+    const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
+    const key = d.toISOString().split('T')[0]
+    if (key in byDay) byDay[key]++
+  })
+  const chartData = Object.entries(byDay).map(([date, count]) => ({ date, count }))
+
+  // Aggregate by linkId
+  const byLink = {}
+  filtered.forEach(c => {
+    if (!byLink[c.linkId]) byLink[c.linkId] = { title: c.linkTitle || c.linkId, count: 0 }
+    byLink[c.linkId].count++
+  })
+  const sorted = Object.entries(byLink).sort((a, b) => b[1].count - a[1].count)
+
+  // Summary stats
+  const today = new Date().toISOString().split('T')[0]
+  const clicksToday = byDay[today] || 0
+  const peakDay = Math.max(...Object.values(byDay), 0)
+  const activeDays = Object.values(byDay).filter(v => v > 0).length
+  const avgPerDay = activeDays > 0 ? (filtered.length / days).toFixed(1) : '0'
+
+  // Date range label
+  const startDate = new Date(Date.now() - (days - 1) * 86400000)
+  const endDate = new Date()
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const rangeLabel = range === 'all' ? 'All time' : `${fmt(startDate)} — ${fmt(endDate)}`
+
+  if (loading) return <div style={{ color: 'var(--muted)', padding: '32px 0', fontSize: 13 }}>Loading analytics...</div>
+
+  return (
+    <div style={{ maxWidth: 820 }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']].map(([v, label]) => (
+            <button key={v} style={{
+              ...s.iconBtn, padding: '7px 14px', fontSize: 12,
+              border: '1px solid var(--border)', borderRadius: 8,
+              background: range === v ? 'rgba(232,255,87,0.08)' : 'var(--surface2)',
+              color: range === v ? 'var(--accent)' : 'var(--text2)',
+              fontWeight: range === v ? 600 : 400,
+            }} onClick={() => setRange(v)}>{label}</button>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 14 }}>📅</span> {rangeLabel}
+        </div>
+      </div>
+
+      {/* Main analytics card */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+
+        {/* Stats row — inspired by the reference layout */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+          {[
+            { label: 'Total Clicks', value: filtered.length, accent: true },
+            { label: 'Unique Links',  value: sorted.length },
+            { label: 'Today',         value: clicksToday },
+            { label: 'Peak Day',      value: peakDay },
+            { label: 'Avg / Day',     value: avgPerDay },
+          ].map((stat, i, arr) => (
+            <div key={stat.label} style={{
+              flex: 1, padding: '20px 22px',
+              borderRight: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
+            }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8, fontWeight: 500, letterSpacing: 0.2 }}>
+                {stat.label}
+              </div>
+              <div style={{
+                fontSize: 28, fontWeight: 800, lineHeight: 1,
+                fontFamily: 'Syne, sans-serif',
+                color: stat.accent ? 'var(--accent)' : 'var(--text)',
+              }}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Area chart */}
+        <div style={{ padding: '20px 24px 0' }}>
+          {chartData.some(d => d.count > 0) ? (
+            <>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+                {Math.max(...chartData.map(d => d.count))}
+              </div>
+              <AreaChart data={chartData} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', paddingBottom: 4, marginTop: 2 }}>
+                <span>{fmt(startDate)}</span>
+                <span>{fmt(endDate)}</span>
+              </div>
+            </>
+          ) : (
+            <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13 }}>
+              No click data yet — share your page to start tracking!
+            </div>
+          )}
+        </div>
+
+        {/* Top links table — like the Sources table in the reference */}
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px 10px' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Top Links</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+          </div>
+
+          {sorted.length === 0 ? (
+            <div style={{ padding: '12px 24px 20px', color: 'var(--muted)', fontSize: 13 }}>
+              No clicks recorded in this period.
+            </div>
+          ) : (
+            sorted.slice(0, 8).map(([linkId, { title, count }], i) => (
+              <div key={linkId} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 24px',
+                borderTop: '1px solid var(--border)',
+                background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                    background: i === 0 ? 'rgba(232,255,87,0.12)' : 'var(--surface2)',
+                    border: `1px solid ${i === 0 ? 'rgba(232,255,87,0.25)' : 'var(--border)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 700,
+                    color: i === 0 ? 'var(--accent)' : 'var(--muted)',
+                  }}>#{i + 1}</div>
+                  <span style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, marginLeft: 16 }}>
+                  <div style={{ width: 72, height: 4, background: 'var(--surface2)', borderRadius: 99 }}>
+                    <div style={{
+                      height: '100%', borderRadius: 99,
+                      width: `${(count / (sorted[0]?.[1].count || 1)) * 100}%`,
+                      background: i === 0 ? 'var(--accent)' : 'rgba(232,255,87,0.35)',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+// Smooth bezier area chart using SVG
+function AreaChart({ data }) {
+  const W = 800
+  const H = 110
+  const PAD_X = 2
+  const PAD_Y = 8
+  const max = Math.max(...data.map(d => d.count), 1)
+  const n = data.length
+
+  const pts = data.map((d, i) => ({
+    x: PAD_X + (i / Math.max(n - 1, 1)) * (W - PAD_X * 2),
+    y: H - PAD_Y - (d.count / max) * (H - PAD_Y * 2),
+  }))
+
+  // Smooth cubic bezier path
+  const linePath = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x} ${p.y}`
+    const prev = pts[i - 1]
+    const cpx = (prev.x + p.x) / 2
+    return `${acc} C ${cpx} ${prev.y}, ${cpx} ${p.y}, ${p.x} ${p.y}`
+  }, '')
+
+  const areaPath = `${linePath} L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 130, display: 'block' }}>
+      <defs>
+        <linearGradient id="clicksGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#e8ff57" stopOpacity="0.22" />
+          <stop offset="85%" stopColor="#e8ff57" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill="url(#clicksGrad)" />
+      <path d={linePath} fill="none" stroke="#e8ff57" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -389,9 +665,7 @@ function Field({ label, value, onChange, multiline, placeholder }) {
 }
 
 function SaveBtn({ onClick }) {
-  return (
-    <button style={s.saveBtn} onClick={onClick}>Save Changes</button>
-  )
+  return <button style={s.saveBtn} onClick={onClick}>Save Changes</button>
 }
 
 function Loader() {
@@ -404,96 +678,47 @@ function Loader() {
 
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const s = {
-  page: {
-    display: 'flex',
-    minHeight: '100vh',
-    background: 'var(--bg)',
-  },
+  page: { display: 'flex', minHeight: '100vh', background: 'var(--bg)' },
   sidebar: {
-    width: 220,
-    flexShrink: 0,
-    background: 'var(--surface)',
-    borderRight: '1px solid var(--border)',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    padding: '24px 16px',
-    position: 'sticky',
-    top: 0,
-    height: '100vh',
+    width: 220, flexShrink: 0,
+    background: 'var(--surface)', borderRight: '1px solid var(--border)',
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+    padding: '24px 16px', position: 'sticky', top: 0, height: '100vh',
   },
   sideTop: { display: 'flex', flexDirection: 'column', gap: 24 },
-  logo: {
-    fontFamily: 'Syne, sans-serif',
-    fontSize: 18,
-    fontWeight: 800,
-    color: 'var(--accent)',
-    letterSpacing: '-0.3px',
-  },
+  logo: { fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.3px' },
   nav: { display: 'flex', flexDirection: 'column', gap: 4 },
   navBtn: {
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 8,
-    padding: '10px 12px',
-    color: 'var(--text2)',
-    fontSize: 13,
-    fontWeight: 500,
-    textAlign: 'left',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
+    background: 'transparent', border: 'none', borderRadius: 8,
+    padding: '10px 12px', color: 'var(--text2)', fontSize: 13,
+    fontWeight: 500, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
   },
-  navActive: {
-    background: 'rgba(232,255,87,0.08)',
-    color: 'var(--accent)',
-  },
+  navActive: { background: 'rgba(232,255,87,0.08)', color: 'var(--accent)' },
   sideBottom: { display: 'flex', flexDirection: 'column' },
   userInfo: { display: 'flex', alignItems: 'center', gap: 8 },
   userAvatar: { width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' },
   userEmail: { fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   previewBtn: {
-    flex: 1,
-    padding: '8px 0',
-    background: 'rgba(232,255,87,0.08)',
-    border: '1px solid rgba(232,255,87,0.15)',
-    borderRadius: 8,
-    color: 'var(--accent)',
-    fontSize: 12,
-    fontWeight: 500,
-    textAlign: 'center',
-    cursor: 'pointer',
+    flex: 1, padding: '8px 0',
+    background: 'rgba(232,255,87,0.08)', border: '1px solid rgba(232,255,87,0.15)',
+    borderRadius: 8, color: 'var(--accent)', fontSize: 12, fontWeight: 500,
+    textAlign: 'center', cursor: 'pointer',
   },
   logoutBtn: {
-    padding: '8px 12px',
-    background: 'var(--surface2)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    color: 'var(--text2)',
-    fontSize: 12,
-    cursor: 'pointer',
+    padding: '8px 12px', background: 'var(--surface2)',
+    border: '1px solid var(--border)', borderRadius: 8,
+    color: 'var(--text2)', fontSize: 12, cursor: 'pointer',
   },
   main: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 },
   header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '24px 32px 0',
-    marginBottom: 24,
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '24px 32px 0', marginBottom: 24,
   },
-  headerTitle: {
-    fontFamily: 'Syne, sans-serif',
-    fontSize: 22,
-    fontWeight: 800,
-    color: 'var(--text)',
-  },
+  headerTitle: { fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 800, color: 'var(--text)' },
   savedBadge: {
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--green)',
-    background: 'rgba(34,197,94,0.1)',
-    border: '1px solid rgba(34,197,94,0.2)',
-    borderRadius: 8,
-    padding: '6px 12px',
+    fontSize: 12, fontWeight: 600, color: 'var(--green)',
+    background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
+    borderRadius: 8, padding: '6px 12px',
   },
   content: { padding: '0 32px 40px', overflow: 'auto' },
   tabBody: { display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 680 },
@@ -501,109 +726,56 @@ const s = {
   field: { display: 'flex', flexDirection: 'column', gap: 6 },
   label: { fontSize: 12, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.3 },
   input: {
-    background: 'var(--surface2)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    color: 'var(--text)',
-    fontSize: 13,
-    outline: 'none',
-    width: '100%',
-    transition: 'border-color 0.15s',
+    background: 'var(--surface2)', border: '1px solid var(--border)',
+    borderRadius: 8, padding: '10px 12px', color: 'var(--text)',
+    fontSize: 13, outline: 'none', width: '100%', transition: 'border-color 0.15s',
   },
   select: {
-    background: 'var(--surface2)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    color: 'var(--text)',
-    fontSize: 13,
-    outline: 'none',
-    cursor: 'pointer',
+    background: 'var(--surface2)', border: '1px solid var(--border)',
+    borderRadius: 8, padding: '10px 12px', color: 'var(--text)',
+    fontSize: 13, outline: 'none', cursor: 'pointer',
   },
   saveBtn: {
-    marginTop: 8,
-    padding: '12px 24px',
-    background: 'var(--accent)',
-    border: 'none',
-    borderRadius: 10,
-    color: '#0a0a0a',
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: 'pointer',
-    fontFamily: 'Syne, sans-serif',
-    alignSelf: 'flex-start',
+    marginTop: 8, padding: '12px 24px', background: 'var(--accent)',
+    border: 'none', borderRadius: 10, color: '#0a0a0a',
+    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    fontFamily: 'Syne, sans-serif', alignSelf: 'flex-start',
   },
   addBtn: {
-    padding: '10px 16px',
-    background: 'var(--surface2)',
-    border: '1px dashed var(--border2)',
-    borderRadius: 10,
-    color: 'var(--text2)',
-    fontSize: 13,
-    cursor: 'pointer',
+    padding: '10px 16px', background: 'var(--surface2)',
+    border: '1px dashed var(--border2)', borderRadius: 10,
+    color: 'var(--text2)', fontSize: 13, cursor: 'pointer',
   },
   row: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    background: 'var(--surface)',
-    border: '1px solid var(--border)',
-    borderRadius: 10,
-    padding: '10px 12px',
+    display: 'flex', alignItems: 'center', gap: 10,
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 10, padding: '10px 12px',
   },
   rowFields: { display: 'flex', gap: 8, flex: 1 },
   rowActions: { display: 'flex', gap: 4 },
   drag: { color: 'var(--muted)', cursor: 'grab', fontSize: 18, userSelect: 'none', flexShrink: 0 },
-  iconBtn: {
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: 14,
-    padding: '4px 6px',
-    borderRadius: 6,
-  },
+  iconBtn: { background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14, padding: '4px 6px', borderRadius: 6 },
   sectionRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    background: 'var(--surface)',
-    border: '1px solid var(--border)',
-    borderRadius: 10,
-    padding: '10px 12px',
-    marginBottom: 2,
+    display: 'flex', alignItems: 'center', gap: 10,
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 10, padding: '10px 12px', marginBottom: 2,
   },
   expandBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    flex: 1,
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    color: 'var(--text)',
-    textAlign: 'left',
-    padding: 0,
+    display: 'flex', alignItems: 'center', flex: 1,
+    background: 'transparent', border: 'none', cursor: 'pointer',
+    color: 'var(--text)', textAlign: 'left', padding: 0,
   },
   linkCount: { fontSize: 11, color: 'var(--muted)', flexShrink: 0 },
   linksInner: {
-    background: 'var(--surface2)',
-    border: '1px solid var(--border)',
-    borderTop: 'none',
-    borderRadius: '0 0 10px 10px',
-    padding: '12px',
-    marginBottom: 8,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
+    background: 'var(--surface2)', border: '1px solid var(--border)',
+    borderTop: 'none', borderRadius: '0 0 10px 10px',
+    padding: '12px', marginBottom: 8,
+    display: 'flex', flexDirection: 'column', gap: 8,
   },
   linkRow: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 10,
-    background: 'var(--surface)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '10px 12px',
+    display: 'flex', alignItems: 'flex-start', gap: 10,
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 8, padding: '10px 12px',
   },
   linkFields: { display: 'flex', flexDirection: 'column', gap: 8, flex: 1 },
 }
