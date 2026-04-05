@@ -21,6 +21,7 @@ const DEFAULT_PROFILE = {
   footerText: 'For brand collabs & partnerships',
   status: 'Creating',
   showLatestVideo: true,
+  latestVideoInline: false,
 }
 
 const DEFAULT_LINKS = {

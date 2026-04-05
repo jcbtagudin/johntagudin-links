@@ -247,6 +247,102 @@
 
 .videoCard:hover .videoWatch { color: var(--text2); }
 
+/* ── Inline preview mode ── */
+.videoCardClickable { cursor: default; }
+
+/* Expanded playing state — switch to vertical column layout */
+.videoCardPlaying {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* 16:9 iframe container */
+.videoEmbedWrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.videoEmbed {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Footer row below iframe */
+.videoEmbedFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.videoEmbedActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.videoClose {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  font-family: var(--font-display);
+}
+
+.videoClose:hover { color: var(--text); border-color: var(--border2); }
+
+/* Thumbnail with play button overlay */
+.videoThumbWrap {
+  position: relative;
+  width: 80px;
+  height: 52px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.videoPlayOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.videoThumbWrap:hover .videoPlayOverlay { opacity: 1; }
+
+.videoPlayBtn {
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,0.92);
+  color: #111;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
 .productsSection {
   margin-bottom: 28px;
   animation: fadeUp 0.5s 0.15s ease both;
