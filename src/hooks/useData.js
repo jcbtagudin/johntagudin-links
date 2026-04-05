@@ -162,20 +162,6 @@ export function useLinks() {
   return { data, loading, save }
 }
 
-// ─── CLICK ANALYTICS ────────────────────────────────────────────────────────
-
-export async function logClick(linkId, linkTitle, sectionId) {
-  try {
-    await addDoc(collection(db, 'clicks'), {
-      linkId,
-      linkTitle,
-      sectionId,
-      timestamp: serverTimestamp(),
-    })
-  } catch (_) {
-    // Silently fail — analytics should never break the public page
-  }
-}
 
 export function useAnalytics() {
   const [clicks, setClicks] = useState([])
