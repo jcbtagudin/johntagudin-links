@@ -99,36 +99,76 @@ export default function PublicPage() {
         {(() => {
           const visibleProducts = products?.items?.filter(p => p.visible) || []
           if (!visibleProducts.length) return null
+          const isGrid = products?.layout === 'grid'
+          const priceWhite = products?.priceColor === 'white'
+
           return (
             <div className={styles.productsSection}>
               <div className={styles.sectionLabel}>🛍️ My Products</div>
-              <div className={styles.productsStack}>
-                {visibleProducts.map(product => (
-                  <a
-                    key={product.id}
-                    href={product.url}
-                    target="_blank"
-                    rel="noopener"
-                    className={styles.productCard}
-                    onClick={() => logClick(product.id, product.name, 'products')}
-                  >
-                    <div className={styles.productThumb}>
-                      {product.thumbnailUrl
-                        ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
-                        : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
-                      }
-                    </div>
-                    <div className={styles.productInfo}>
-                      <div className={styles.productName}>{product.name}</div>
-                      <div className={styles.productDesc}>{product.description}</div>
-                    </div>
-                    <div className={styles.productMeta}>
-                      <div className={styles.productPrice}>{product.price || 'Free'}</div>
-                      <div className={styles.productBtn}>Get it →</div>
-                    </div>
-                  </a>
-                ))}
-              </div>
+
+              {isGrid ? (
+                /* ── GRID LAYOUT ── */
+                <div className={styles.productsGrid}>
+                  {visibleProducts.map(product => (
+                    <a
+                      key={product.id}
+                      href={product.url}
+                      target="_blank"
+                      rel="noopener"
+                      className={styles.productCardGrid}
+                      onClick={() => logClick(product.id, product.name, 'products')}
+                    >
+                      <div className={styles.productThumbGrid}>
+                        {product.thumbnailUrl
+                          ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                          : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                        }
+                      </div>
+                      <div className={styles.productInfoGrid}>
+                        <div className={styles.productNameGrid}>{product.name}</div>
+                        <div className={styles.productDescGrid}>{product.description}</div>
+                        <div className={styles.productMetaGrid}>
+                          <span className={priceWhite ? styles.productPriceWhite : styles.productPrice}>
+                            {product.price || 'Free'}
+                          </span>
+                          <span className={styles.productBtn}>Get it →</span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                /* ── ROW LAYOUT ── */
+                <div className={styles.productsStack}>
+                  {visibleProducts.map(product => (
+                    <a
+                      key={product.id}
+                      href={product.url}
+                      target="_blank"
+                      rel="noopener"
+                      className={styles.productCard}
+                      onClick={() => logClick(product.id, product.name, 'products')}
+                    >
+                      <div className={styles.productThumb}>
+                        {product.thumbnailUrl
+                          ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                          : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                        }
+                      </div>
+                      <div className={styles.productInfo}>
+                        <div className={styles.productName}>{product.name}</div>
+                        <div className={styles.productDesc}>{product.description}</div>
+                      </div>
+                      <div className={styles.productMeta}>
+                        <span className={priceWhite ? styles.productPriceWhite : styles.productPrice}>
+                          {product.price || 'Free'}
+                        </span>
+                        <span className={styles.productBtn}>Get it →</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           )
         })()}

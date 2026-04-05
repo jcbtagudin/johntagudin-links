@@ -466,16 +466,22 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
 function ProductsTab({ onSaved }) {
   const { products, loading, save } = useProducts()
   const [items, setItems] = useState(null)
+  const [layout, setLayout] = useState('rows')
+  const [priceColor, setPriceColor] = useState('accent')
   const sensors = useSensors(useSensor(PointerSensor))
 
   React.useEffect(() => {
-    if (products && !items) setItems(products.items || [])
+    if (products && !items) {
+      setItems(products.items || [])
+      setLayout(products.layout || 'rows')
+      setPriceColor(products.priceColor || 'accent')
+    }
   }, [products])
 
   if (loading || !items) return <Loader />
 
   const saveAll = async () => {
-    await save({ items })
+    await save({ items, layout, priceColor })
     onSaved()
   }
 
@@ -498,8 +504,46 @@ function ProductsTab({ onSaved }) {
     }
   }
 
+  const optionBtn = (active) => ({
+    ...s.iconBtn,
+    padding: '7px 14px', fontSize: 12, borderRadius: 8,
+    border: '1px solid var(--border)',
+    background: active ? 'rgba(232,255,87,0.08)' : 'var(--surface2)',
+    color: active ? 'var(--accent)' : 'var(--text2)',
+    fontWeight: active ? 600 : 400,
+  })
+
   return (
     <div style={s.tabBody}>
+
+      {/* Display settings */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>DISPLAY SETTINGS</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Layout</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button style={optionBtn(layout === 'rows')} onClick={() => setLayout('rows')}>≡ Rows</button>
+            <button style={optionBtn(layout === 'grid')} onClick={() => setLayout('grid')}>⊞ Grid</button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Price color</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button style={optionBtn(priceColor === 'accent')} onClick={() => setPriceColor('accent')}>
+              <span style={{ color: '#e8ff57' }}>●</span> Accent
+            </button>
+            <button style={optionBtn(priceColor === 'white')} onClick={() => setPriceColor('white')}>
+              <span style={{ color: '#fff' }}>●</span> White
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div style={s.tabInfo}>Drag to reorder. Each product shows as a card on your public page above your link sections.</div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
