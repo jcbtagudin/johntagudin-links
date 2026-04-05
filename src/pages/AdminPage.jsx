@@ -563,70 +563,84 @@ function ProductsTab({ onSaved }) {
 function SortableProductRow({ product, update, toggle, remove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: product.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+  const [open, setOpen] = React.useState(!product.name)
 
   return (
-    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', gap: 0 }}>
-      {/* Header row: drag + name preview + toggle + delete */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', gap: 0, padding: '10px 12px' }}>
+      {/* Compact header — always visible */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span {...attributes} {...listeners} style={s.drag}>⠿</span>
 
-        {/* Thumbnail preview */}
+        {/* Thumbnail */}
         <div style={{
-          width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+          width: 32, height: 32, borderRadius: 7, flexShrink: 0,
           background: 'var(--surface2)', border: '1px solid var(--border)',
           overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {product.thumbnailUrl
             ? <img src={product.thumbnailUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
-            : <span style={{ fontSize: 14, color: 'var(--muted)' }}>{product.name?.[0] || '🛍'}</span>
+            : <span style={{ fontSize: 13, color: 'var(--muted)' }}>{product.name?.[0] || '🛍'}</span>
           }
         </div>
 
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: product.name ? 'var(--text)' : 'var(--muted)' }}>
+        {/* Name + price */}
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: product.name ? 'var(--text)' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {product.name || 'New Product'}
         </span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>{product.price || 'Free'}</span>
-        <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={toggle}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: /\d/.test(product.price) ? 'var(--text)' : 'var(--accent)', flexShrink: 0 }}>
+          {product.price || 'Free'}
+        </span>
+
+        {/* Actions */}
+        <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 4px' }} onClick={toggle}>
           {product.visible ? '👁' : '🚫'}
         </button>
-        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={remove}>✕</button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 4px' }} onClick={remove}>✕</button>
+
+        {/* Expand toggle */}
+        <button
+          style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 4px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          onClick={() => setOpen(o => !o)}
+        >▾</button>
       </div>
 
-      {/* Fields */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 0 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
+      {/* Expandable fields */}
+      {open && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
+          <div style={{ display: 'flex', gap: 7 }}>
+            <input
+              style={{ ...s.input, flex: 1 }}
+              placeholder="Product name"
+              value={product.name}
+              onChange={e => update('name', e.target.value)}
+            />
+            <input
+              style={{ ...s.input, width: 96 }}
+              placeholder="Price"
+              value={product.price}
+              onChange={e => update('price', e.target.value)}
+            />
+          </div>
           <input
-            style={{ ...s.input, flex: 1 }}
-            placeholder="Product name"
-            value={product.name}
-            onChange={e => update('name', e.target.value)}
+            style={s.input}
+            placeholder="Short description"
+            value={product.description}
+            onChange={e => update('description', e.target.value)}
           />
           <input
-            style={{ ...s.input, width: 100 }}
-            placeholder="Price (Free / ₱299)"
-            value={product.price}
-            onChange={e => update('price', e.target.value)}
+            style={s.input}
+            placeholder="Gumroad URL"
+            value={product.url}
+            onChange={e => update('url', e.target.value)}
+          />
+          <input
+            style={s.input}
+            placeholder="Thumbnail URL (optional)"
+            value={product.thumbnailUrl}
+            onChange={e => update('thumbnailUrl', e.target.value)}
           />
         </div>
-        <input
-          style={s.input}
-          placeholder="Short description (one line)"
-          value={product.description}
-          onChange={e => update('description', e.target.value)}
-        />
-        <input
-          style={s.input}
-          placeholder="Gumroad URL (https://...gumroad.com/l/...)"
-          value={product.url}
-          onChange={e => update('url', e.target.value)}
-        />
-        <input
-          style={s.input}
-          placeholder="Thumbnail image URL (optional)"
-          value={product.thumbnailUrl}
-          onChange={e => update('thumbnailUrl', e.target.value)}
-        />
-      </div>
+      )}
     </div>
   )
 }
