@@ -788,7 +788,7 @@ function PinnedTab({ onSaved }) {
       {/* Fields */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <div style={s.field}>
-          <label style={s.label}>ICON</label>
+          <label style={s.label}>ICON EMOJI</label>
           <input
             style={{ ...s.input, width: 64, textAlign: 'center', fontSize: 22, padding: '8px' }}
             value={form.icon}
@@ -807,6 +807,13 @@ function PinnedTab({ onSaved }) {
           </select>
         </div>
       </div>
+
+      <Field
+        label="ICON IMAGE URL (overrides emoji above)"
+        value={form.iconUrl || ''}
+        onChange={v => set('iconUrl', v)}
+        placeholder="https://... (png, jpg, svg — leave blank to use emoji)"
+      />
 
       <Field label="SUBTITLE" value={form.subtitle} onChange={v => set('subtitle', v)} placeholder="e.g. Watch my latest video on AI tools" />
       <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />

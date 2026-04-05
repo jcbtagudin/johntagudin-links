@@ -92,6 +92,7 @@ export function useProfile() {
 const DEFAULT_PINNED = {
   enabled: false,
   icon: '📌',
+  iconUrl: '',
   title: '',
   subtitle: '',
   url: '',

@@ -117,7 +117,11 @@ export default function PublicPage() {
                   </div>
                 )}
                 <div className={styles.pinnedCardBody}>
-                  <div className={`${styles.icon} ${styles.iconAccent}`}>{pinned.icon}</div>
+                  <div className={`${styles.icon} ${pinned.iconUrl ? styles.iconImg : styles.iconAccent}`}>
+                    {pinned.iconUrl
+                      ? <img src={pinned.iconUrl} alt="" onError={e => e.target.style.display = 'none'} />
+                      : pinned.icon}
+                  </div>
                   <div className={styles.cardText}>
                     <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
                     <div className={`${styles.cardSub} ${styles.pinnedSub}`}>{pinned.subtitle}</div>
