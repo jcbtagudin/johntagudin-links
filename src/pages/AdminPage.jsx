@@ -932,7 +932,7 @@ function AnalyticsTab() {
               </div>
               <div style={{
                 fontSize: 28, fontWeight: 800, lineHeight: 1,
-                fontFamily: 'Syne, sans-serif',
+                fontFamily: "'SF Pro Display', -apple-system, sans-serif",
                 color: stat.accent ? 'var(--accent)' : 'var(--text)',
               }}>
                 {stat.value}
@@ -1038,7 +1038,7 @@ function PinnedCardPreview({ pinned }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 700,
+          fontFamily: "'SF Pro Display', -apple-system, sans-serif", fontSize: 14, fontWeight: 700,
           color: 'var(--accent)', letterSpacing: '-0.2px', marginBottom: 2,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
@@ -1136,7 +1136,7 @@ const s = {
     padding: '24px 16px', position: 'sticky', top: 0, height: '100vh',
   },
   sideTop: { display: 'flex', flexDirection: 'column', gap: 24 },
-  logo: { fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.3px' },
+  logo: { fontFamily: "'SF Pro Display', -apple-system, sans-serif", fontSize: 18, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.3px' },
   nav: { display: 'flex', flexDirection: 'column', gap: 4 },
   navBtn: {
     background: 'transparent', border: 'none', borderRadius: 8,
@@ -1164,7 +1164,7 @@ const s = {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '24px 32px 0', marginBottom: 24,
   },
-  headerTitle: { fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 800, color: 'var(--text)' },
+  headerTitle: { fontFamily: "'SF Pro Display', -apple-system, sans-serif", fontSize: 22, fontWeight: 800, color: 'var(--text)' },
   savedBadge: {
     fontSize: 12, fontWeight: 600, color: 'var(--green)',
     background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)',
@@ -1189,7 +1189,7 @@ const s = {
     marginTop: 8, padding: '12px 24px', background: 'var(--accent)',
     border: 'none', borderRadius: 10, color: '#FFFFFF',
     fontSize: 14, fontWeight: 700, cursor: 'pointer',
-    fontFamily: 'Syne, sans-serif', alignSelf: 'flex-start',
+    fontFamily: "'SF Pro Display', -apple-system, sans-serif", alignSelf: 'flex-start',
   },
   addBtn: {
     padding: '10px 16px', background: 'var(--surface2)',
