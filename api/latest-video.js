@@ -18,8 +18,10 @@ export default async function handler(req, res) {
   }
 
   const { YOUTUBE_API_KEY, YOUTUBE_CHANNEL_ID } = process.env
+
+  // Gracefully return empty — card will silently hide, no console errors
   if (!YOUTUBE_API_KEY || !YOUTUBE_CHANNEL_ID) {
-    return res.status(500).json({ error: 'Missing YOUTUBE_API_KEY or YOUTUBE_CHANNEL_ID env vars' })
+    return res.status(200).json({ error: 'not_configured' })
   }
 
   try {
@@ -37,7 +39,7 @@ export default async function handler(req, res) {
     const data = await r.json()
 
     if (!data.items?.length) {
-      return res.status(404).json({ error: 'No videos found' })
+      return res.status(200).json({ error: 'no_videos' })
     }
 
     const { id, snippet } = data.items[0]
@@ -58,6 +60,7 @@ export default async function handler(req, res) {
     res.setHeader('X-Cache', 'MISS')
     return res.status(200).json(video)
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch latest video' })
+    // Always return 200 so the browser doesn't log a red error
+    return res.status(200).json({ error: 'fetch_failed' })
   }
 }
