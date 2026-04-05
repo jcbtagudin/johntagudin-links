@@ -309,7 +309,7 @@ function renderBioWithHighlight(bio, highlight) {
   return (
     <>
       {parts[0]}
-      <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{highlight}</span>
+      <span style={{ color: 'var(--text)', fontWeight: 700 }}>{highlight}</span>
       {parts[1]}
     </>
   )
