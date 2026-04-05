@@ -565,18 +565,27 @@
 }
 
 .badge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 5px 12px;
+  border-radius: 100px;
   flex-shrink: 0;
   text-transform: uppercase;
+  border: none;
 }
 
-.badgeFree { background: rgba(74,124,64,0.1);  color: #4A7C40; border: 1px solid rgba(74,124,64,0.2); }
-.badgeNew  { background: rgba(224,122,47,0.1);  color: #E07A2F; border: 1px solid rgba(224,122,47,0.2); }
-.badgeHot  { background: rgba(220,38,38,0.08);  color: #DC2626; border: 1px solid rgba(220,38,38,0.15); }
+/* FREE on light card — soft sage green pill */
+.badgeFree { background: rgba(74,124,64,0.12); color: #3A6832; }
+
+/* FREE on dark/featured card — white pill */
+.featured .badgeFree { background: rgba(255,255,255,0.18); color: #FFFFFF; }
+
+/* NEW — warm amber pill */
+.badgeNew { background: rgba(245,158,11,0.13); color: #B45309; }
+
+/* HOT — soft orange pill */
+.badgeHot { background: rgba(234,88,12,0.1); color: #C2410C; }
 
 .arrow {
   color: var(--muted);
