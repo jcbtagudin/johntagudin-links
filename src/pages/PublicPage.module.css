@@ -466,6 +466,19 @@
   100% { transform: scale(3.5); opacity: 0;   }
 }
 
+@keyframes cardClickBounce {
+  0%   { transform: scale(1);     }
+  25%  { transform: scale(0.962); }  /* press down  */
+  55%  { transform: scale(1.03);  }  /* bounce up   */
+  75%  { transform: scale(0.988); }  /* settle      */
+  100% { transform: scale(1);     }
+}
+
+/* Applied when cursorActive — fires in sync with the click moment */
+.pinnedGlowBounce {
+  animation: cardClickBounce 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1.96s both;
+}
+
 .cursorHint {
   position: absolute;
   bottom: 22px;     /* stays in the card-body row regardless of thumbnail */

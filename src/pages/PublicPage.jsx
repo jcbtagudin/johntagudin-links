@@ -98,7 +98,7 @@ export default function PublicPage() {
         {pinned?.enabled && pinned?.url && (
           <div className={styles.pinnedSection}>
             <div className={styles.pinnedLabel}>📌 Pinned</div>
-            <div className={styles.pinnedGlowWrap}>
+            <div className={`${styles.pinnedGlowWrap} ${cursorActive ? styles.pinnedGlowBounce : ''}`}>
 
               <a
                 href={pinned.url}
