@@ -618,23 +618,21 @@ function SortableProductRow({ product, update, toggle, remove }) {
 
       {/* Expandable fields */}
       {open && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 10 }}>
-          <div style={{ display: 'flex', gap: 7 }}>
-            <input
-              style={{ ...s.input, flex: 1 }}
-              placeholder="Product name"
-              value={product.name}
-              onChange={e => update('name', e.target.value)}
-            />
-            <input
-              style={{ ...s.input, width: 96 }}
-              placeholder="Price"
-              value={product.price}
-              onChange={e => update('price', e.target.value)}
-            />
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 10 }}>
           <input
             style={s.input}
+            placeholder="Product name"
+            value={product.name}
+            onChange={e => update('name', e.target.value)}
+          />
+          <input
+            style={s.input}
+            placeholder="Price (Free / ₱299)"
+            value={product.price}
+            onChange={e => update('price', e.target.value)}
+          />
+          <input
+            style={{ ...s.input, gridColumn: '1 / -1' }}
             placeholder="Short description"
             value={product.description}
             onChange={e => update('description', e.target.value)}
