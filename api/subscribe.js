@@ -98,27 +98,13 @@ export default async function handler(req, res) {
       if (audienceError) console.error('[subscribe] Resend audience error:', audienceError)
     } catch (err) { console.error('[subscribe] Resend audience exception:', err) }
 
-    // Send welcome email
+    // Send welcome email using the Resend template
     try {
       const { error: emailError } = await resend.emails.send({
         from: fromAddress,
         to: [cleanEmail],
         subject: 'you made a good call 👋',
-        html: `
-          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a;padding:40px 24px;line-height:1.7;">
-            <p style="font-size:16px;margin-bottom:20px;">
-              Hey — genuinely glad you're here.
-            </p>
-            <p style="font-size:16px;margin-bottom:20px;">
-              I only send when I find something actually worth your time — an AI tool that saved me hours, a workflow I've been quietly using, or something I built that felt too good not to share. No schedule. No filler. No "thought leadership."
-            </p>
-            <p style="font-size:16px;margin-bottom:28px;">
-              Since you're here, here's something I made that people use every day: <a href="https://johntagudin.gumroad.com/l/FloatAdGen" style="color:#4A7C40;font-weight:600;text-decoration:none;">Float Ad Gen</a> — generate 3D floating product ad images, completely free. Takes about 30 seconds. No design skills needed.
-            </p>
-            <p style="font-size:16px;margin-bottom:4px;">Talk soon,</p>
-            <p style="font-size:16px;font-weight:700;">John</p>
-          </div>
-        `,
+        template_id: 'welcome-email',
       })
       if (emailError) console.error('[subscribe] Resend email error:', emailError)
     } catch (err) { console.error('[subscribe] Resend email exception:', err) }
