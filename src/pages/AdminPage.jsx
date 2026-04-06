@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -90,6 +90,7 @@ export default function AdminPage() {
               { id: 'subscribers',  label: '👥 Subscribers' },
               { id: 'email',        label: '✉️ Email' },
               { id: 'analytics',    label: '📊 Analytics' },
+              { id: 'reviews',      label: '⭐ Reviews' },
             ].map(item => (
               <button
                 key={item.id}
@@ -125,6 +126,7 @@ export default function AdminPage() {
             {tab === 'subscribers'  && 'Subscribers'}
             {tab === 'email'        && 'Welcome Email'}
             {tab === 'analytics'    && 'Click Analytics'}
+            {tab === 'reviews'      && 'Reviews'}
           </div>
           {saved && <div style={s.savedBadge}>✓ Saved</div>}
         </div>
@@ -153,6 +155,9 @@ export default function AdminPage() {
           )}
           {tab === 'analytics' && (
             <AnalyticsTab />
+          )}
+          {tab === 'reviews' && (
+            <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />
           )}
         </div>
       </main>
@@ -1677,6 +1682,112 @@ function AreaChart({ data }) {
       <path d={areaPath} fill="url(#clicksGrad)" />
       <path d={linePath} fill="none" stroke="#4A7C40" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  )
+}
+
+// ─── REVIEWS TAB ─────────────────────────────────────────────────────────────
+function ReviewsTab({ profile, update, onSaved }) {
+  const { reviews, loading, approve, reject, unapprove, remove, togglePin } = useAdminReviews()
+  const [subTab, setSubTab] = useState('pending')
+
+  const pending  = reviews.filter(r => r.status === 'pending')
+  const approved = reviews.filter(r => r.status === 'approved')
+  const rejected = reviews.filter(r => r.status === 'rejected')
+
+  const list = subTab === 'pending' ? pending : subTab === 'approved' ? approved : rejected
+
+  const starStr = (n) => '★'.repeat(n) + '☆'.repeat(5 - n)
+
+  const toggleShowReviews = async () => {
+    await update({ showReviews: !profile.showReviews })
+    onSaved()
+  }
+
+  return (
+    <div style={s.tabBody}>
+      {/* Show/hide toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Show Reviews on Public Page</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Only approved reviews are visible to visitors.</div>
+        </div>
+        <button
+          onClick={toggleShowReviews}
+          style={{
+            padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: profile.showReviews ? 'var(--accent)' : 'var(--surface2)',
+            color: profile.showReviews ? '#fff' : 'var(--text2)',
+            fontWeight: 600, fontSize: 13,
+          }}
+        >
+          {profile.showReviews ? 'Visible' : 'Hidden'}
+        </button>
+      </div>
+
+      {/* Sub-tab nav */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {[
+          { id: 'pending',  label: `Pending (${pending.length})` },
+          { id: 'approved', label: `Approved (${approved.length})` },
+          { id: 'rejected', label: `Rejected (${rejected.length})` },
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id)}
+            style={{
+              padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)',
+              background: subTab === t.id ? 'var(--accent)' : 'var(--surface2)',
+              color: subTab === t.id ? '#fff' : 'var(--text2)',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading && <div style={{ color: 'var(--muted)', fontSize: 13 }}>Loading...</div>}
+
+      {!loading && list.length === 0 && (
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>No {subTab} reviews.</div>
+      )}
+
+      {list.map(r => {
+        const date = r.createdAt?.toDate
+          ? r.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : '—'
+        return (
+          <div key={r.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{r.name}</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>{date}</span>
+                {r.pinned && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'rgba(74,124,64,0.12)', borderRadius: 4, padding: '2px 6px', marginLeft: 6 }}>PINNED</span>}
+              </div>
+              <span style={{ fontSize: 14, color: '#f59e0b', letterSpacing: 1 }}>{starStr(r.rating)}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>{r.comment}</p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {r.status !== 'approved' && (
+                <button onClick={() => approve(r.id)} style={{ ...s.iconBtn, background: 'rgba(34,197,94,0.1)', color: 'var(--green)', border: '1px solid rgba(34,197,94,0.2)', fontSize: 12, fontWeight: 600 }}>✓ Approve</button>
+              )}
+              {r.status === 'approved' && (
+                <button onClick={() => unapprove(r.id)} style={{ ...s.iconBtn, background: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)', fontSize: 12, fontWeight: 600 }}>Unapprove</button>
+              )}
+              {r.status !== 'rejected' && (
+                <button onClick={() => reject(r.id)} style={{ ...s.iconBtn, background: 'rgba(239,68,68,0.08)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.2)', fontSize: 12, fontWeight: 600 }}>✗ Reject</button>
+              )}
+              {r.status === 'approved' && (
+                <button onClick={() => togglePin(r.id, r.pinned)} style={{ ...s.iconBtn, background: 'rgba(74,124,64,0.08)', color: 'var(--accent)', border: '1px solid rgba(74,124,64,0.2)', fontSize: 12, fontWeight: 600 }}>
+                  {r.pinned ? '📌 Unpin' : '📌 Pin'}
+                </button>
+              )}
+              <button onClick={() => { if (window.confirm('Delete this review?')) remove(r.id) }} style={{ ...s.iconBtn, background: 'rgba(239,68,68,0.06)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 12, fontWeight: 600 }}>Delete</button>
+            </div>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 

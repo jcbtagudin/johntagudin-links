@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView, useApprovedReviews, submitReview } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
 
@@ -258,6 +258,11 @@ export default function PublicPage() {
 
         {/* SOCIALS — bottom position */}
         {socialsBottom && SocialsBar}
+
+        {/* REVIEWS */}
+        {profile.showReviews === true && (
+          <ReviewsSection />
+        )}
 
         {/* FOOTER */}
         <div className={styles.footer}>
@@ -560,6 +565,147 @@ function Arrow() {
     <svg className={styles.arrow} width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
+  )
+}
+
+// ─── REVIEWS ─────────────────────────────────────────────────────────────────
+
+const CARD_WIDTH = 280
+const CARD_GAP   = 12
+
+function StarDisplay({ rating, size = 14 }) {
+  return (
+    <span style={{ fontSize: size, letterSpacing: 1 }}>
+      {'★'.repeat(rating)}<span style={{ color: 'var(--border2)' }}>{'★'.repeat(5 - rating)}</span>
+    </span>
+  )
+}
+
+function ReviewCard({ review }) {
+  const date = review.createdAt?.toDate
+    ? review.createdAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+  return (
+    <div className={styles.reviewCard}>
+      <div className={styles.reviewStars}><StarDisplay rating={review.rating} /></div>
+      <p className={styles.reviewComment}>{review.comment}</p>
+      <div className={styles.reviewMeta}>
+        <span className={styles.reviewName}>{review.name}</span>
+        {date && <span className={styles.reviewDate}>{date}</span>}
+      </div>
+    </div>
+  )
+}
+
+function ReviewsSection() {
+  const { reviews, loading } = useApprovedReviews()
+  const [formOpen,   setFormOpen]   = useState(false)
+  const [formName,   setFormName]   = useState('')
+  const [formRating, setFormRating] = useState(0)
+  const [formComment,setFormComment]= useState('')
+  const [formStatus, setFormStatus] = useState('idle') // idle | loading | success | error
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!formName.trim() || !formRating || !formComment.trim()) return
+    setFormStatus('loading')
+    try {
+      await submitReview({ name: formName.trim(), rating: formRating, comment: formComment.trim() })
+      setFormStatus('success')
+      setFormName(''); setFormRating(0); setFormComment('')
+    } catch {
+      setFormStatus('error')
+    }
+  }
+
+  if (loading) return null
+
+  const hasReviews = reviews.length > 0
+  const avg = hasReviews
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : null
+  // Slower for fewer cards so each one is readable
+  const duration = Math.max(18, reviews.length * 7)
+
+  return (
+    <div className={styles.reviewsSection}>
+      {/* Section label */}
+      <div className={styles.sectionLabel} style={{ marginBottom: 10 }}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle', marginRight: 5 }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        What People Say
+      </div>
+
+      {/* Summary bar */}
+      {hasReviews && (
+        <div className={styles.reviewSummary}>
+          <span className={styles.reviewAvgNum}>{avg}</span>
+          <span className={styles.reviewAvgStars}><StarDisplay rating={Math.round(parseFloat(avg))} size={13} /></span>
+          <span className={styles.reviewCount}>· {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</span>
+        </div>
+      )}
+
+      {/* Marquee — duplicated for seamless loop */}
+      {hasReviews && (
+        <div className={styles.reviewsCarouselWrap}>
+          <div
+            className={styles.reviewsCarousel}
+            style={{ animationDuration: `${duration}s` }}
+          >
+            {[...reviews, ...reviews].map((r, i) => (
+              <ReviewCard key={`${r.id}-${i}`} review={r} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Leave a review */}
+      <div className={styles.reviewToggleWrap}>
+        {formStatus === 'success' ? (
+          <p className={styles.reviewSuccessMsg}>Thanks! Your review is pending approval.</p>
+        ) : (
+          <>
+            <button className={styles.reviewToggleBtn} onClick={() => setFormOpen(o => !o)}>
+              {formOpen ? 'Cancel' : 'Leave a review'}
+            </button>
+            {formOpen && (
+              <form className={styles.reviewForm} onSubmit={handleSubmit} noValidate>
+                <input
+                  className={styles.reviewInput}
+                  placeholder="Your name"
+                  value={formName}
+                  onChange={e => setFormName(e.target.value)}
+                  maxLength={60}
+                  required
+                />
+                <div className={styles.reviewStarPicker}>
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} type="button" className={styles.reviewStarPickerBtn} onClick={() => setFormRating(n)}>
+                      <span style={{ color: n <= formRating ? '#f59e0b' : 'var(--border2)', fontSize: 24 }}>★</span>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <textarea
+                    className={styles.reviewInput}
+                    style={{ minHeight: 80, resize: 'vertical' }}
+                    placeholder="Share your experience (max 150 chars)"
+                    value={formComment}
+                    onChange={e => setFormComment(e.target.value.slice(0, 150))}
+                    maxLength={150}
+                    required
+                  />
+                  <span className={styles.reviewCharCount}>{formComment.length}/150</span>
+                </div>
+                {formStatus === 'error' && <p style={{ fontSize: 12, color: '#DC2626', margin: '2px 0 0' }}>Something went wrong. Please try again.</p>}
+                <button type="submit" className={styles.reviewSubmitBtn} disabled={formStatus === 'loading' || !formName || !formRating || !formComment}>
+                  {formStatus === 'loading' ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </form>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 
