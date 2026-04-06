@@ -782,20 +782,20 @@ function SortableProductRow({ product, update, toggle, remove }) {
           {product.price || 'Free'}
         </span>
 
-        {/* Actions */}
-        {product.featured && (
-          <span title="Featured" style={{ fontSize: 13, lineHeight: 1 }}>⭐</span>
-        )}
-        <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 4px' }} onClick={toggle}>
-          {product.visible ? '👁' : '🚫'}
-        </button>
-        <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 4px' }} onClick={remove}>✕</button>
-
-        {/* Expand toggle */}
-        <button
-          style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 4px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
-          onClick={() => setOpen(o => !o)}
-        >▾</button>
+        {/* Actions — always flush right */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          {product.featured && (
+            <span title="Featured" style={{ fontSize: 13, lineHeight: 1, marginRight: 2 }}>⭐</span>
+          )}
+          <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 6px' }} onClick={toggle}>
+            {product.visible ? '👁' : '🚫'}
+          </button>
+          <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 6px' }} onClick={remove}>✕</button>
+          <button
+            style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 6px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            onClick={() => setOpen(o => !o)}
+          >▾</button>
+        </div>
       </div>
 
       {/* Expandable fields */}
