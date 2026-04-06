@@ -409,8 +409,6 @@ function ProductsSection({ products, logClick, styles }) {
   const [expanded, setExpanded] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0)
   const sliderRef = useRef(null)
-  const dragRef = useRef({ dragging: false, startX: 0, scrollLeft: 0 })
-
   const visibleProducts = products?.items?.filter(p => p.visible) || []
   if (!visibleProducts.length) return null
 
@@ -429,24 +427,11 @@ function ProductsSection({ products, logClick, styles }) {
     setActiveSlide(Math.round(el.scrollLeft / (cardWidth + 12)))
   }
 
-  const onMouseDown = (e) => {
+  const slideBy = (dir) => {
     const el = sliderRef.current
     if (!el) return
-    dragRef.current = { dragging: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
-    el.style.cursor = 'grabbing'
-    el.style.userSelect = 'none'
-  }
-  const onMouseMove = (e) => {
-    if (!dragRef.current.dragging) return
-    const el = sliderRef.current
-    if (!el) return
-    const x = e.pageX - el.offsetLeft
-    el.scrollLeft = dragRef.current.scrollLeft - (x - dragRef.current.startX)
-  }
-  const onMouseUp = () => {
-    dragRef.current.dragging = false
-    const el = sliderRef.current
-    if (el) { el.style.cursor = 'grab'; el.style.userSelect = '' }
+    const cardWidth = el.firstChild?.offsetWidth || 220
+    el.scrollBy({ left: dir * (cardWidth + 12), behavior: 'smooth' })
   }
 
   return (
@@ -458,41 +443,48 @@ function ProductsSection({ products, logClick, styles }) {
 
       {isSlider ? (
         <>
-          <div
-            className={styles.productsSlider}
-            ref={sliderRef}
-            onScroll={handleSliderScroll}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
-            style={{ cursor: 'grab' }}
-          >
-            {visibleProducts.map(product => (
-              <a
-                key={product.id}
-                href={product.url}
-                target="_blank"
-                rel="noopener"
-                className={`${styles.productSliderCard} ${product.featured ? styles.featuredProduct : ''}`}
-                onClick={() => logClick(product.id, product.name, 'products', meta)}
-              >
-                <div className={styles.productThumbGrid}>
-                  {product.thumbnailUrl
-                    ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
-                    : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
-                  }
-                </div>
-                <div className={styles.productInfoGrid}>
-                  <div className={styles.productNameGrid}>{product.name}</div>
-                  <div className={styles.productDescGrid}>{product.description}</div>
-                  <div className={styles.productMetaGrid}>
-                    <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
-                    <span className={styles.productBtn}>Get it →</span>
+          <div className={styles.sliderWrapper}>
+            {activeSlide > 0 && (
+              <button className={`${styles.sliderArrow} ${styles.sliderArrowLeft}`} onClick={() => slideBy(-1)} aria-label="Previous">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            )}
+            <div
+              className={styles.productsSlider}
+              ref={sliderRef}
+              onScroll={handleSliderScroll}
+            >
+              {visibleProducts.map(product => (
+                <a
+                  key={product.id}
+                  href={product.url}
+                  target="_blank"
+                  rel="noopener"
+                  className={`${styles.productSliderCard} ${product.featured ? styles.featuredProduct : ''}`}
+                  onClick={() => logClick(product.id, product.name, 'products', meta)}
+                >
+                  <div className={styles.productThumbGrid}>
+                    {product.thumbnailUrl
+                      ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                      : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                    }
                   </div>
-                </div>
-              </a>
-            ))}
+                  <div className={styles.productInfoGrid}>
+                    <div className={styles.productNameGrid}>{product.name}</div>
+                    <div className={styles.productDescGrid}>{product.description}</div>
+                    <div className={styles.productMetaGrid}>
+                      <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
+                      <span className={styles.productBtn}>Get it →</span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            {activeSlide < visibleProducts.length - 1 && (
+              <button className={`${styles.sliderArrow} ${styles.sliderArrowRight}`} onClick={() => slideBy(1)} aria-label="Next">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )}
           </div>
           {visibleProducts.length > 1 && (
             <div className={styles.sliderDots}>
