@@ -691,7 +691,12 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
         <input style={s.input} placeholder="URL (https://...)" value={link.url} onChange={e => onUpdate('url', e.target.value)} />
 
         {/* Row 3b: thumbnail */}
-        <ImageUploadField value={link.thumbnail || ''} onChange={v => onUpdate('thumbnail', v)} path="links" placeholder="Thumbnail image URL (optional)" />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {link.thumbnail && (
+            <img src={link.thumbnail} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0 }} onError={e => e.currentTarget.style.display = 'none'} />
+          )}
+          <ImageUploadField value={link.thumbnail || ''} onChange={v => onUpdate('thumbnail', v)} path="links" placeholder="Thumbnail image URL (optional)" />
+        </div>
 
         {/* Row 4: checkboxes + schedule toggle */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)' }}>

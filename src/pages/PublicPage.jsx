@@ -225,36 +225,23 @@ export default function PublicPage() {
                       className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
                       onClick={() => logClick(link.id, link.title, section.id, meta)}
                     >
-                      {link.thumbnail ? (
-                        <>
-                          <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
-                          <div className={styles.cardThumbOverlay}>
-                            <span className={styles.cardThumbTitle}>{link.title}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              {badge && <span className={`${styles.badge} ${styles[badge.cls]}`}>{badge.label}</span>}
-                              <Arrow />
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className={styles.cardRow}>
-                          <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
-                            {link.iconImage
-                              ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
-                              : link.icon}
-                          </div>
-                          <div className={styles.cardText}>
-                            <div className={styles.cardTitle}>{link.title}</div>
-                            <div className={styles.cardSub}>{link.subtitle}</div>
-                          </div>
-                          {badge && (
-                            <span className={`${styles.badge} ${styles[badge.cls]}`}>
-                              {badge.label}
-                            </span>
-                          )}
-                          <Arrow />
+                      <div className={styles.cardRow}>
+                        <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
+                          {link.iconImage
+                            ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                            : link.icon}
                         </div>
-                      )}
+                        <div className={styles.cardText}>
+                          <div className={styles.cardTitle}>{link.title}</div>
+                          <div className={styles.cardSub}>{link.subtitle}</div>
+                        </div>
+                        {badge && (
+                          <span className={`${styles.badge} ${styles[badge.cls]}`}>
+                            {badge.label}
+                          </span>
+                        )}
+                        <Arrow />
+                      </div>
                     </a>
                   )
                 })}
