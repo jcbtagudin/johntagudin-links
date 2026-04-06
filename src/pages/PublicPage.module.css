@@ -544,6 +544,10 @@
 .sliderArrowLeft  { left: -14px; }
 .sliderArrowRight { right: -14px; }
 
+@media (max-width: 600px) {
+  .sliderArrow { display: none; }
+}
+
 .sliderDots {
   display: flex;
   justify-content: center;
