@@ -98,6 +98,9 @@ export default async function handler(req, res) {
     welcomeHtml = welcomeHtml.replace(/(<body[^>]*>)/i, `$1${preheader}`)
   }
 
+  // Inject subscriber email into unsubscribe link
+  welcomeHtml = welcomeHtml.replace('{{EMAIL}}', encodeURIComponent(cleanEmail))
+
   if (RESEND_API_KEY && RESEND_AUDIENCE_ID) {
     const resend = new Resend(RESEND_API_KEY)
 
