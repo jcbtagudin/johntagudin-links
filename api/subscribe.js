@@ -7,6 +7,7 @@
 //   no separate read query needed, no auth required, works with allow create: if true.
 
 import { Resend } from 'resend'
+import { WELCOME_EMAIL_HTML } from './welcome-email.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -31,21 +32,16 @@ export default async function handler(req, res) {
   const emailDocId = Buffer.from(cleanEmail).toString('base64url')
 
   // ── 1. Atomic write to Firestore ──────────────────────────────────────────
-  // PATCH + currentDocument.exists=false:
-  //   • Doc doesn't exist → creates it → 200 ✓ new subscriber
-  //   • Doc already exists → Firestore returns 409 → already subscribed, skip Resend
-  //   • Any other error  → 5xx → tell the user to retry
+  // POST with ?documentId= creates a document with a specific ID.
+  // If the document already exists Firestore returns 409 ALREADY_EXISTS —
+  // this is the reliable duplicate check that requires no prior read or auth.
   let isNewSubscriber = true
   try {
-    const now    = new Date().toISOString()
-    const fsUrl  = [
-      `https://firestore.googleapis.com/v1/projects/${projectId}`,
-      `/databases/(default)/documents/subscribers/${emailDocId}`,
-      `?currentDocument.exists=false&key=${apiKey}`,
-    ].join('')
+    const now   = new Date().toISOString()
+    const fsUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/subscribers?documentId=${emailDocId}&key=${apiKey}`
 
     const fsRes = await fetch(fsUrl, {
-      method: 'PATCH',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fields: {
@@ -57,7 +53,7 @@ export default async function handler(req, res) {
     })
 
     if (fsRes.status === 409) {
-      // Already subscribed — return success silently, skip Resend entirely
+      // ALREADY_EXISTS — already subscribed, skip Resend entirely
       isNewSubscriber = false
     } else if (!fsRes.ok) {
       const err = await fsRes.text()
@@ -78,17 +74,29 @@ export default async function handler(req, res) {
   const RESEND_API_KEY     = process.env.RESEND_API_KEY
   const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID
 
-  // Read sender address from Firestore config/profile (publicly readable, no auth needed)
+  // Load email config from Firestore (from, subject, previewText, html)
   let fromAddress = 'John Tagudin <hello@johntagudin.com>'
+  let emailSubject = 'you made a good call 👋'
+  let welcomeHtml  = WELCOME_EMAIL_HTML
+  let previewText  = ''
   try {
-    const profileUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/profile?key=${apiKey}`
-    const profileRes = await fetch(profileUrl)
-    if (profileRes.ok) {
-      const profileData = await profileRes.json()
-      const resendFrom  = profileData?.fields?.resendFrom?.stringValue
-      if (resendFrom && resendFrom.trim()) fromAddress = resendFrom.trim()
+    const emailUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/email?key=${apiKey}`
+    const emailRes = await fetch(emailUrl)
+    if (emailRes.ok) {
+      const emailData = await emailRes.json()
+      const f = emailData?.fields || {}
+      if (f.from?.stringValue?.trim())             fromAddress  = f.from.stringValue.trim()
+      if (f.subject?.stringValue?.trim())           emailSubject = f.subject.stringValue.trim()
+      if (f.previewText?.stringValue?.trim())       previewText  = f.previewText.stringValue.trim()
+      if (f.welcomeEmailHtml?.stringValue?.trim())  welcomeHtml  = f.welcomeEmailHtml.stringValue.trim()
     }
-  } catch (_) { /* Fall back to default sender */ }
+  } catch (_) { /* Fall back to defaults */ }
+
+  // Inject preview text as hidden preheader right after <body ...>
+  if (previewText) {
+    const preheader = `<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:transparent;">${previewText}</div>`
+    welcomeHtml = welcomeHtml.replace(/(<body[^>]*>)/i, `$1${preheader}`)
+  }
 
   if (RESEND_API_KEY && RESEND_AUDIENCE_ID) {
     const resend = new Resend(RESEND_API_KEY)
@@ -108,22 +116,8 @@ export default async function handler(req, res) {
       const { error: emailError } = await resend.emails.send({
         from: fromAddress,
         to: [cleanEmail],
-        subject: 'you made a good call 👋',
-        html: `
-          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a;padding:40px 24px;line-height:1.7;">
-            <p style="font-size:16px;margin-bottom:20px;">
-              Hey — genuinely glad you're here.
-            </p>
-            <p style="font-size:16px;margin-bottom:20px;">
-              I only send when I find something actually worth your time — an AI tool that saved me hours, a workflow I've been quietly using, or something I built that felt too good not to share. No schedule. No filler. No "thought leadership."
-            </p>
-            <p style="font-size:16px;margin-bottom:28px;">
-              Since you're here, here's something I made that people use every day: <a href="https://johntagudin.gumroad.com/l/FloatAdGen" style="color:#4A7C40;font-weight:600;text-decoration:none;">Float Ad Gen</a> — generate 3D floating product ad images, completely free. Takes about 30 seconds. No design skills needed.
-            </p>
-            <p style="font-size:16px;margin-bottom:4px;">Talk soon,</p>
-            <p style="font-size:16px;font-weight:700;">John</p>
-          </div>
-        `,
+        subject: emailSubject,
+        html: welcomeHtml,
       })
       if (emailError) console.error('[subscribe] Resend email error:', emailError)
     } catch (err) { console.error('[subscribe] Resend email exception:', err) }

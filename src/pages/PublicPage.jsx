@@ -476,9 +476,10 @@ function Arrow() {
 // ─── EMAIL CAPTURE CARD ───────────────────────────────────────────────────────
 
 function EmailCaptureCard({ profile }) {
-  const [email, setEmail]   = useState('')
-  const [status, setStatus] = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
-  const [shake, setShake]   = useState(false)
+  const [email, setEmail]     = useState('')
+  const [status, setStatus]   = useState('idle') // 'idle' | 'loading' | 'success' | 'error'
+  const [shake, setShake]     = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const headline = profile.captureHeadline || "For when you're too tired to figure this out yourself"
   const subtext  = profile.captureSubtext  || "I share AI tools, shortcuts, and workflows that actually save time — only when I find something worth sharing. No spam. No schedule."
@@ -499,11 +500,13 @@ function EmailCaptureCard({ profile }) {
       if (data.success) {
         setStatus('success')
       } else {
+        setErrorMsg(data.error || 'Something went wrong. Please try again.')
         setStatus('error')
         setShake(true)
         setTimeout(() => setShake(false), 600)
       }
     } catch {
+      setErrorMsg('Something went wrong. Please try again.')
       setStatus('error')
       setShake(true)
       setTimeout(() => setShake(false), 600)
@@ -530,7 +533,7 @@ function EmailCaptureCard({ profile }) {
           type="email"
           placeholder="your@email.com"
           value={email}
-          onChange={e => { setEmail(e.target.value); if (status === 'error') setStatus('idle') }}
+          onChange={e => { setEmail(e.target.value); if (status === 'error') { setStatus('idle'); setErrorMsg('') } }}
           disabled={status === 'loading'}
           autoComplete="email"
         />
@@ -542,6 +545,9 @@ function EmailCaptureCard({ profile }) {
           {status === 'loading' ? '...' : 'I need this'}
         </button>
       </form>
+      {status === 'error' && errorMsg && (
+        <p className={styles.emailErrorMsg}>{errorMsg}</p>
+      )}
     </div>
   )
 }

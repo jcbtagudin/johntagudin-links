@@ -9,6 +9,7 @@ const PROFILE_DOC   = 'config/profile'
 const LINKS_DOC     = 'config/links'
 const PINNED_DOC    = 'config/pinned'
 const PRODUCTS_DOC  = 'config/products'
+const EMAIL_DOC     = 'config/email'
 
 // Default data seeded on first run
 const DEFAULT_PROFILE = {
@@ -236,6 +237,29 @@ export function useAnalytics() {
   }, [])
 
   return { clicks, pageViews, loading }
+}
+
+// ─── EMAIL CONFIG ─────────────────────────────────────────────────────────────
+
+export function useEmailConfig() {
+  const [emailConfig, setEmailConfig] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const ref = doc(db, ...EMAIL_DOC.split('/'))
+    const unsub = onSnapshot(ref, snap => {
+      setEmailConfig(snap.exists() ? snap.data() : {})
+      setLoading(false)
+    })
+    return unsub
+  }, [])
+
+  const save = async (data) => {
+    const ref = doc(db, ...EMAIL_DOC.split('/'))
+    await setDoc(ref, data, { merge: true })
+  }
+
+  return { emailConfig, loading, save }
 }
 
 // ─── GUMROAD PRODUCTS ────────────────────────────────────────────────────────

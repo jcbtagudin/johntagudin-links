@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -88,6 +88,7 @@ export default function AdminPage() {
               { id: 'products',  label: '🛍️ Products' },
               { id: 'pinned',       label: '📌 Pinned' },
               { id: 'subscribers',  label: '👥 Subscribers' },
+              { id: 'email',        label: '✉️ Email' },
               { id: 'analytics',    label: '📊 Analytics' },
             ].map(item => (
               <button
@@ -122,6 +123,7 @@ export default function AdminPage() {
             {tab === 'products'  && 'Gumroad Products'}
             {tab === 'pinned'       && 'Pinned Link'}
             {tab === 'subscribers'  && 'Subscribers'}
+            {tab === 'email'        && 'Welcome Email'}
             {tab === 'analytics'    && 'Click Analytics'}
           </div>
           {saved && <div style={s.savedBadge}>✓ Saved</div>}
@@ -145,6 +147,9 @@ export default function AdminPage() {
           )}
           {tab === 'subscribers' && (
             <SubscribersTab />
+          )}
+          {tab === 'email' && (
+            <EmailTab onSaved={showSaved} />
           )}
           {tab === 'analytics' && (
             <AnalyticsTab />
@@ -339,12 +344,6 @@ function ProfileTab({ profile, update, onSaved }) {
               value={form.captureProof || ''}
               onChange={v => set('captureProof', v)}
               placeholder="Joined by 500K+ creators"
-            />
-            <Field
-              label="WELCOME EMAIL SENDER"
-              value={form.resendFrom || ''}
-              onChange={v => set('resendFrom', v)}
-              placeholder="John Tagudin <hello@johntagudin.com>"
             />
           </>
         )}
@@ -970,6 +969,116 @@ function PinnedTab({ onSaved }) {
 }
 
 // ─── SUBSCRIBERS TAB ─────────────────────────────────────────────────────────
+// ─── EMAIL TAB ────────────────────────────────────────────────────────────────
+function EmailTab({ onSaved }) {
+  const { emailConfig, loading, save } = useEmailConfig()
+  const [from,        setFrom]        = useState('')
+  const [subject,     setSubject]     = useState('')
+  const [previewText, setPreviewText] = useState('')
+  const [html,        setHtml]        = useState('')
+  const [preview,     setPreview]     = useState(false)
+
+  // Populate once data loads
+  React.useEffect(() => {
+    if (!loading && emailConfig !== null) {
+      setFrom(emailConfig.from || '')
+      setSubject(emailConfig.subject || '')
+      setPreviewText(emailConfig.previewText || '')
+      setHtml(emailConfig.welcomeEmailHtml || '')
+    }
+  }, [loading, emailConfig])
+
+  if (loading) return <Loader />
+
+  const handleSave = async () => {
+    await save({ from, subject, previewText, welcomeEmailHtml: html })
+    onSaved()
+  }
+
+  return (
+    <div style={{ ...s.tabBody, maxWidth: 780 }}>
+
+      {/* Info card */}
+      <div style={{
+        background: 'rgba(74,124,64,0.06)', border: '1px solid rgba(74,124,64,0.2)',
+        borderRadius: 10, padding: '12px 16px', fontSize: 13, color: 'var(--text2)', lineHeight: 1.6,
+      }}>
+        <strong style={{ color: 'var(--accent)' }}>Welcome Email</strong> — sent automatically to every new subscriber.
+        Changes save to Firestore and apply to all future sends instantly.
+      </div>
+
+      {/* From / Subject / Preview Text */}
+      <Field
+        label='From (e.g. John Tagudin <hello@johntagudin.com>)'
+        value={from}
+        onChange={setFrom}
+        placeholder="John Tagudin <hello@johntagudin.com>"
+      />
+      <Field
+        label="Subject"
+        value={subject}
+        onChange={setSubject}
+        placeholder="you made a good call 👋"
+      />
+      <Field
+        label="Preview Text (shown in inbox before opening — keep under 90 chars)"
+        value={previewText}
+        onChange={setPreviewText}
+        placeholder="Here's what you get access to..."
+      />
+
+      {/* HTML toolbar */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+        <label style={{ ...s.label, marginBottom: 0 }}>HTML Body</label>
+        <div style={{ flex: 1 }} />
+        <button
+          style={{
+            ...s.iconBtn, padding: '8px 14px', fontSize: 12, fontWeight: 600,
+            border: '1px solid var(--border)', borderRadius: 8,
+            color: preview ? 'var(--accent)' : 'var(--text2)',
+            background: preview ? 'rgba(74,124,64,0.08)' : 'var(--surface2)',
+          }}
+          onClick={() => setPreview(p => !p)}
+        >
+          {preview ? '✕ Close Preview' : '👁 Preview'}
+        </button>
+        <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+          {html.length.toLocaleString()} chars
+        </span>
+      </div>
+
+      {/* Preview iframe */}
+      {preview && html && (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', background: '#f3f3ef' }}>
+          <iframe
+            srcDoc={html}
+            title="Email Preview"
+            style={{ width: '100%', height: 600, border: 'none', display: 'block' }}
+            sandbox="allow-same-origin"
+          />
+        </div>
+      )}
+
+      {/* HTML textarea */}
+      {!preview && (
+        <textarea
+          style={{
+            ...s.input, minHeight: 480, resize: 'vertical',
+            fontFamily: "'Courier New', Courier, monospace", fontSize: 12,
+            lineHeight: 1.5, whiteSpace: 'pre',
+          }}
+          value={html}
+          onChange={e => setHtml(e.target.value)}
+          placeholder="Paste your welcome email HTML here..."
+          spellCheck={false}
+        />
+      )}
+
+      <SaveBtn onClick={handleSave} />
+    </div>
+  )
+}
+
 function SubscribersTab() {
   const { subscribers, loading } = useSubscribers()
   const [search, setSearch] = useState('')
