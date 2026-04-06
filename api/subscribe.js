@@ -1,6 +1,12 @@
 // Vercel serverless function — handles email newsletter subscriptions
-// Flow: check duplicate → save to Firestore → add to Resend Audience → send welcome email
-// Resend failures are silently caught — the email is always safe in Firestore first.
+// Flow: atomic duplicate check → save to Firestore → add to Resend Audience → send welcome email
+//
+// Duplicate prevention strategy:
+//   Uses the email (base64url encoded) as the Firestore document ID.
+//   PATCH with currentDocument.exists=false fails atomically if the doc already exists —
+//   no separate read query needed, no auth required, works with allow create: if true.
+
+import { Resend } from 'resend'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -20,119 +26,107 @@ export default async function handler(req, res) {
   const projectId  = process.env.VITE_FIREBASE_PROJECT_ID
   const apiKey     = process.env.VITE_FIREBASE_API_KEY
 
-  // ── 0. Duplicate check — silently succeed if already subscribed ───────────
-  try {
-    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`
-    const queryRes = await fetch(queryUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        structuredQuery: {
-          from: [{ collectionId: 'subscribers' }],
-          where: {
-            fieldFilter: {
-              field: { fieldPath: 'email' },
-              op: 'EQUAL',
-              value: { stringValue: cleanEmail },
-            },
-          },
-          limit: 1,
-        },
-      }),
-    })
-    if (queryRes.ok) {
-      const results = await queryRes.json()
-      if (results[0]?.document) {
-        // Already subscribed — return success silently, no duplicate insert or email
-        return res.status(200).json({ success: true })
-      }
-    }
-  } catch (_) { /* If the check fails, continue and let the insert proceed */ }
+  // Use base64url of the email as the Firestore document ID.
+  // base64url chars (A-Za-z0-9-_) are all valid in Firestore doc IDs.
+  const emailDocId = Buffer.from(cleanEmail).toString('base64url')
 
-  // ── 1. Save to Firestore — always do this first ───────────────────────────
+  // ── 1. Atomic write to Firestore ──────────────────────────────────────────
+  // PATCH + currentDocument.exists=false:
+  //   • Doc doesn't exist → creates it → 200 ✓ new subscriber
+  //   • Doc already exists → Firestore returns 409 → already subscribed, skip Resend
+  //   • Any other error  → 5xx → tell the user to retry
+  let isNewSubscriber = true
   try {
-    const now = new Date().toISOString()
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/subscribers?key=${apiKey}`
-    const fsRes = await fetch(url, {
-      method: 'POST',
+    const now    = new Date().toISOString()
+    const fsUrl  = [
+      `https://firestore.googleapis.com/v1/projects/${projectId}`,
+      `/databases/(default)/documents/subscribers/${emailDocId}`,
+      `?currentDocument.exists=false&key=${apiKey}`,
+    ].join('')
+
+    const fsRes = await fetch(fsUrl, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fields: {
           email:        { stringValue: cleanEmail },
           subscribedAt: { timestampValue: now },
           source:       { stringValue: 'linkinbio' },
-        }
+        },
       }),
     })
-    if (!fsRes.ok) {
+
+    if (fsRes.status === 409) {
+      // Already subscribed — return success silently, skip Resend entirely
+      isNewSubscriber = false
+    } else if (!fsRes.ok) {
       const err = await fsRes.text()
-      console.error('Firestore write failed:', err)
+      console.error('[subscribe] Firestore write failed:', fsRes.status, err)
       return res.status(500).json({ error: 'Something went wrong. Please try again.' })
     }
   } catch (err) {
-    console.error('Firestore error:', err)
+    console.error('[subscribe] Firestore error:', err)
     return res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 
-  // ── 2 & 3. Resend — fire and forget, silently fail ────────────────────────
+  // Already subscribed — no duplicate email, no duplicate Resend contact
+  if (!isNewSubscriber) {
+    return res.status(200).json({ success: true })
+  }
+
+  // ── 2. Resend — add to audience + send welcome email ──────────────────────
   const RESEND_API_KEY     = process.env.RESEND_API_KEY
   const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID
 
-  // Read sender address from Firestore config/profile (publicly readable)
+  // Read sender address from Firestore config/profile (publicly readable, no auth needed)
   let fromAddress = 'John Tagudin <hello@johntagudin.com>'
   try {
     const profileUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/profile?key=${apiKey}`
     const profileRes = await fetch(profileUrl)
     if (profileRes.ok) {
       const profileData = await profileRes.json()
-      const resendFrom = profileData?.fields?.resendFrom?.stringValue
+      const resendFrom  = profileData?.fields?.resendFrom?.stringValue
       if (resendFrom && resendFrom.trim()) fromAddress = resendFrom.trim()
     }
   } catch (_) { /* Fall back to default sender */ }
 
   if (RESEND_API_KEY && RESEND_AUDIENCE_ID) {
-    // Add contact to audience
+    const resend = new Resend(RESEND_API_KEY)
+
+    // Add contact to Resend Audience
     try {
-      await fetch(`https://api.resend.com/audiences/${RESEND_AUDIENCE_ID}/contacts`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: cleanEmail, unsubscribed: false }),
+      const { error: audienceError } = await resend.contacts.create({
+        audienceId: RESEND_AUDIENCE_ID,
+        email: cleanEmail,
+        unsubscribed: false,
       })
-    } catch (_) { /* Silently fail — email is already saved in Firestore */ }
+      if (audienceError) console.error('[subscribe] Resend audience error:', audienceError)
+    } catch (err) { console.error('[subscribe] Resend audience exception:', err) }
 
     // Send welcome email
     try {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: cleanEmail,
-          subject: 'you made a good call 👋',
-          html: `
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a;padding:40px 24px;line-height:1.7;">
-              <p style="font-size:16px;margin-bottom:20px;">
-                Hey — genuinely glad you're here.
-              </p>
-              <p style="font-size:16px;margin-bottom:20px;">
-                I only send when I find something actually worth your time — an AI tool that saved me hours, a workflow I've been quietly using, or something I built that felt too good not to share. No schedule. No filler. No "thought leadership."
-              </p>
-              <p style="font-size:16px;margin-bottom:28px;">
-                Since you're here, here's something I made that people use every day: <a href="https://johntagudin.gumroad.com/l/FloatAdGen" style="color:#4A7C40;font-weight:600;text-decoration:none;">Float Ad Gen</a> — generate 3D floating product ad images, completely free. Takes about 30 seconds. No design skills needed.
-              </p>
-              <p style="font-size:16px;margin-bottom:4px;">Talk soon,</p>
-              <p style="font-size:16px;font-weight:700;">John</p>
-            </div>
-          `,
-        }),
+      const { error: emailError } = await resend.emails.send({
+        from: fromAddress,
+        to: [cleanEmail],
+        subject: 'you made a good call 👋',
+        html: `
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a;padding:40px 24px;line-height:1.7;">
+            <p style="font-size:16px;margin-bottom:20px;">
+              Hey — genuinely glad you're here.
+            </p>
+            <p style="font-size:16px;margin-bottom:20px;">
+              I only send when I find something actually worth your time — an AI tool that saved me hours, a workflow I've been quietly using, or something I built that felt too good not to share. No schedule. No filler. No "thought leadership."
+            </p>
+            <p style="font-size:16px;margin-bottom:28px;">
+              Since you're here, here's something I made that people use every day: <a href="https://johntagudin.gumroad.com/l/FloatAdGen" style="color:#4A7C40;font-weight:600;text-decoration:none;">Float Ad Gen</a> — generate 3D floating product ad images, completely free. Takes about 30 seconds. No design skills needed.
+            </p>
+            <p style="font-size:16px;margin-bottom:4px;">Talk soon,</p>
+            <p style="font-size:16px;font-weight:700;">John</p>
+          </div>
+        `,
       })
-    } catch (_) { /* Silently fail — email is already saved in Firestore */ }
+      if (emailError) console.error('[subscribe] Resend email error:', emailError)
+    } catch (err) { console.error('[subscribe] Resend email exception:', err) }
   }
 
   return res.status(200).json({ success: true })
