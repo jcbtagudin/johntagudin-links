@@ -1,4 +1,5 @@
 // Welcome email HTML — sent to new subscribers via Resend
+// {{EMAIL}} is replaced at send time in subscribe.js with encodeURIComponent(cleanEmail)
 export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -51,7 +52,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
   <!-- Email container -->
   <table class="email-container" role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="margin:0 auto;">
 
-    <!-- MAIN CARD -->
+    <!-- ═══ MAIN CARD ═══ -->
     <tr>
       <td style="background-color:#ffffff; border-radius:20px; border:1px solid #e2e2dc; box-shadow:0 2px 24px rgba(0,0,0,0.06);">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -104,7 +105,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
                 <tr>
                   <td>
                     <p style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:15px; font-weight:300; color:#3a3a4a; line-height:1.7; margin:0; padding:0;">
-                      I built a small collection of AI tools and apps that I actually use from time to time — things I vibe coded myself when I needed something that didn't exist yet. You're getting free access to all of it.
+                      I put together a collection of free video editing resources, tools, and finds from around the internet — stuff I discovered so you don't have to go digging yourself. You're getting free access to all of it.
                     </p>
                   </td>
                 </tr>
@@ -114,10 +115,10 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px; margin-bottom:36px;">
                 <tr>
                   <td style="background-color:#0c0c10; border-radius:10px;">
-                    <a href="https://ai.studio/apps/0f311720-4cec-4eab-8935-42588739e294"
+                    <a href="https://johntagudin.notion.site/Free-Resources-to-get-started-d3f05c92c1474e8cb923c1438aef9b63?pvs=73"
                       target="_blank"
                       style="display:inline-block; padding:14px 28px; font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:14px; font-weight:500; color:#ffffff; text-decoration:none; letter-spacing:-0.1px; border-radius:10px;">
-                      Check out the tools &rarr;
+                      Access the free resources &rarr;
                     </a>
                   </td>
                 </tr>
@@ -134,7 +135,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:16px;">
                 <tr>
                   <td>
-                    <span style="font-family:'Courier New',Courier,monospace; font-size:10px; color:#7a7a90; letter-spacing:1.5px; text-transform:uppercase;">what you get access to</span>
+                    <span style="font-family:'Courier New',Courier,monospace; font-size:10px; color:#7a7a90; letter-spacing:1.5px; text-transform:uppercase;">what's inside</span>
                   </td>
                 </tr>
               </table>
@@ -152,10 +153,10 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
                               <td style="font-size:22px; padding-bottom:10px; line-height:1;">🤖</td>
                             </tr>
                             <tr>
-                              <td style="font-family:Georgia,'Times New Roman',serif; font-size:14px; font-weight:400; color:#0c0c10; padding-bottom:4px; line-height:1.3;">AI Tools</td>
+                              <td style="font-family:Georgia,'Times New Roman',serif; font-size:14px; font-weight:400; color:#0c0c10; padding-bottom:4px; line-height:1.3;">Free Finds</td>
                             </tr>
                             <tr>
-                              <td style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; color:#7a7a90; font-weight:300; line-height:1.5;">Built for creators</td>
+                              <td style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; color:#7a7a90; font-weight:300; line-height:1.5;">Handpicked for you</td>
                             </tr>
                           </table>
                         </td>
@@ -173,10 +174,10 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
                               <td style="font-size:22px; padding-bottom:10px; line-height:1;">⚡</td>
                             </tr>
                             <tr>
-                              <td style="font-family:Georgia,'Times New Roman',serif; font-size:14px; font-weight:400; color:#0c0c10; padding-bottom:4px; line-height:1.3;">Workflows</td>
+                              <td style="font-family:Georgia,'Times New Roman',serif; font-size:14px; font-weight:400; color:#0c0c10; padding-bottom:4px; line-height:1.3;">Resources</td>
                             </tr>
                             <tr>
-                              <td style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; color:#7a7a90; font-weight:300; line-height:1.5;">Save hours weekly</td>
+                              <td style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; color:#7a7a90; font-weight:300; line-height:1.5;">Tools &amp; guides</td>
                             </tr>
                           </table>
                         </td>
@@ -194,10 +195,10 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
                               <td style="font-size:22px; padding-bottom:10px; line-height:1;">💸</td>
                             </tr>
                             <tr>
-                              <td style="font-family:Georgia,'Times New Roman',serif; font-size:14px; font-weight:400; color:#0c0c10; padding-bottom:4px; line-height:1.3;">Income Tools</td>
+                              <td style="font-family:Georgia,'Times New Roman',serif; font-size:14px; font-weight:400; color:#0c0c10; padding-bottom:4px; line-height:1.3;">Shortcuts</td>
                             </tr>
                             <tr>
-                              <td style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; color:#7a7a90; font-weight:300; line-height:1.5;">Generate more</td>
+                              <td style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; color:#7a7a90; font-weight:300; line-height:1.5;">Work smarter</td>
                             </tr>
                           </table>
                         </td>
@@ -212,7 +213,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
                 <tr>
                   <td>
                     <p style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:15px; font-weight:300; color:#3a3a4a; line-height:1.7; margin:0; padding:0;">
-                      I don't send emails on a schedule. Only when I find something actually worth your time — a tool, a shortcut, a workflow, something I learned the hard way so you don't have to.
+                      I don't send emails on a schedule. Only when I come across something actually worth your time — a free tool, a hidden resource, a shortcut I stumbled on so you don't have to go looking.
                     </p>
                   </td>
                 </tr>
@@ -265,7 +266,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
       </td>
     </tr>
 
-    <!-- FOOTER -->
+    <!-- ═══ FOOTER ═══ -->
     <tr>
       <td align="center" style="padding:28px 20px 0;">
 
@@ -277,7 +278,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
             </td>
             <td style="font-family:'Courier New',Courier,monospace; font-size:11px; color:#d0d0c8; padding:0 2px;">&middot;</td>
             <td style="padding:0 8px;">
-              <a href="https://facebook.com/john.tagudin" style="font-family:'Courier New',Courier,monospace; font-size:11px; color:#7a7a90; text-decoration:none; letter-spacing:0.3px;">Facebook</a>
+              <a href="https://facebook.com/johntagudin.media" style="font-family:'Courier New',Courier,monospace; font-size:11px; color:#7a7a90; text-decoration:none; letter-spacing:0.3px;">Facebook</a>
             </td>
             <td style="font-family:'Courier New',Courier,monospace; font-size:11px; color:#d0d0c8; padding:0 2px;">&middot;</td>
             <td style="padding:0 8px;">
@@ -285,7 +286,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
             </td>
             <td style="font-family:'Courier New',Courier,monospace; font-size:11px; color:#d0d0c8; padding:0 2px;">&middot;</td>
             <td style="padding:0 8px;">
-              <a href="https://youtube.com/@johntagudin" style="font-family:'Courier New',Courier,monospace; font-size:11px; color:#7a7a90; text-decoration:none; letter-spacing:0.3px;">YouTube</a>
+              <a href="https://youtube.com/@john.tagudin" style="font-family:'Courier New',Courier,monospace; font-size:11px; color:#7a7a90; text-decoration:none; letter-spacing:0.3px;">YouTube</a>
             </td>
           </tr>
         </table>
