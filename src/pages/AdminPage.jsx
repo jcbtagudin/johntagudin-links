@@ -757,7 +757,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
   const [open, setOpen] = React.useState(!product.name)
 
   return (
-    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', gap: 0, padding: '10px 12px' }}>
+    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: '10px 12px' }}>
       {/* Compact header — always visible */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span {...attributes} {...listeners} style={s.drag}>⠿</span>
