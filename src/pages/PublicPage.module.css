@@ -1198,24 +1198,26 @@
 }
 
 .reviewsCarouselWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%);
 }
 
 .reviewsCarousel {
   display: flex;
   gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  flex: 1;
-  min-width: 0;
+  width: max-content;
+  animation: reviewsMarquee 20s linear infinite;
 }
 
-.reviewsCarousel::-webkit-scrollbar { display: none; }
+.reviewsCarousel:hover {
+  animation-play-state: paused;
+}
+
+@keyframes reviewsMarquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 
 .reviewCard {
   flex: 0 0 280px;

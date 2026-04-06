@@ -599,39 +599,11 @@ function ReviewCard({ review }) {
 
 function ReviewsSection() {
   const { reviews, loading } = useApprovedReviews()
-  const carouselRef   = useRef(null)
-  const [activeIdx,  setActiveIdx]  = useState(0)
-  const [hovering,   setHovering]   = useState(false)
   const [formOpen,   setFormOpen]   = useState(false)
   const [formName,   setFormName]   = useState('')
   const [formRating, setFormRating] = useState(0)
   const [formComment,setFormComment]= useState('')
   const [formStatus, setFormStatus] = useState('idle') // idle | loading | success | error
-
-  // Auto-slide
-  useEffect(() => {
-    if (hovering || loading || reviews.length <= 1) return
-    const t = setInterval(() => {
-      setActiveIdx(prev => {
-        const next = prev >= reviews.length - 1 ? 0 : prev + 1
-        carouselRef.current?.scrollTo({ left: next * (CARD_WIDTH + CARD_GAP), behavior: 'smooth' })
-        return next
-      })
-    }, 4000)
-    return () => clearInterval(t)
-  }, [hovering, loading, reviews.length])
-
-  const handleScroll = () => {
-    const el = carouselRef.current
-    if (!el) return
-    setActiveIdx(Math.round(el.scrollLeft / (CARD_WIDTH + CARD_GAP)))
-  }
-
-  const scrollTo = (idx) => {
-    const clamped = Math.max(0, Math.min(idx, reviews.length - 1))
-    carouselRef.current?.scrollTo({ left: clamped * (CARD_WIDTH + CARD_GAP), behavior: 'smooth' })
-    setActiveIdx(clamped)
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -652,6 +624,8 @@ function ReviewsSection() {
   const avg = hasReviews
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : null
+  // Slower for fewer cards so each one is readable
+  const duration = Math.max(18, reviews.length * 7)
 
   return (
     <div className={styles.reviewsSection}>
@@ -661,7 +635,7 @@ function ReviewsSection() {
         What People Say
       </div>
 
-      {/* Summary bar — only when there are approved reviews */}
+      {/* Summary bar */}
       {hasReviews && (
         <div className={styles.reviewSummary}>
           <span className={styles.reviewAvgNum}>{avg}</span>
@@ -670,54 +644,18 @@ function ReviewsSection() {
         </div>
       )}
 
-      {/* Carousel wrapper — only when there are approved reviews */}
+      {/* Marquee — duplicated for seamless loop */}
       {hasReviews && (
-        <>
-          <div className={styles.reviewsCarouselWrap}
-            onMouseEnter={() => setHovering(true)}
-            onMouseLeave={() => setHovering(false)}
-            onTouchStart={() => setHovering(true)}
-            onTouchEnd={() => setTimeout(() => setHovering(false), 2000)}
+        <div className={styles.reviewsCarouselWrap}>
+          <div
+            className={styles.reviewsCarousel}
+            style={{ animationDuration: `${duration}s` }}
           >
-            {/* Left arrow */}
-            <button
-              className={`${styles.reviewArrow} ${styles.reviewArrowLeft}`}
-              onClick={() => scrollTo(activeIdx - 1)}
-              aria-label="Previous"
-              style={{ opacity: activeIdx === 0 ? 0 : 1 }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-
-            {/* Scroll container */}
-            <div
-              className={styles.reviewsCarousel}
-              ref={carouselRef}
-              onScroll={handleScroll}
-            >
-              {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
-            </div>
-
-            {/* Right arrow */}
-            <button
-              className={`${styles.reviewArrow} ${styles.reviewArrowRight}`}
-              onClick={() => scrollTo(activeIdx + 1)}
-              aria-label="Next"
-              style={{ opacity: activeIdx >= reviews.length - 1 ? 0 : 1 }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
+            {[...reviews, ...reviews].map((r, i) => (
+              <ReviewCard key={`${r.id}-${i}`} review={r} />
+            ))}
           </div>
-
-          {/* Dots */}
-          {reviews.length > 1 && (
-            <div className={styles.sliderDots} style={{ marginTop: 10 }}>
-              {reviews.map((_, i) => (
-                <div key={i} className={`${styles.sliderDot} ${i === activeIdx ? styles.sliderDotActive : ''}`} onClick={() => scrollTo(i)} style={{ cursor: 'pointer' }} />
-              ))}
-            </div>
-          )}
-        </>
+        </div>
       )}
 
       {/* Leave a review */}
@@ -739,7 +677,6 @@ function ReviewsSection() {
                   maxLength={60}
                   required
                 />
-                {/* Star picker */}
                 <div className={styles.reviewStarPicker}>
                   {[1,2,3,4,5].map(n => (
                     <button key={n} type="button" className={styles.reviewStarPickerBtn} onClick={() => setFormRating(n)}>
