@@ -1239,6 +1239,7 @@
 .reviewSummary {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   margin-bottom: 12px;
 }
@@ -1351,7 +1352,7 @@
   margin-top: 12px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
 }
 
@@ -1399,6 +1400,7 @@
 .reviewStarPicker {
   display: flex;
   gap: 4px;
+  justify-content: center;
 }
 
 .reviewStarPickerBtn {
