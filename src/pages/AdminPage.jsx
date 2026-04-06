@@ -757,7 +757,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
   const [open, setOpen] = React.useState(!product.name)
 
   return (
-    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', gap: 0, padding: '10px 12px' }}>
+    <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: '10px 12px' }}>
       {/* Compact header — always visible */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span {...attributes} {...listeners} style={s.drag}>⠿</span>
@@ -774,28 +774,28 @@ function SortableProductRow({ product, update, toggle, remove }) {
           }
         </div>
 
-        {/* Name + price */}
+        {/* Name */}
         <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: product.name ? 'var(--text)' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {product.name || 'New Product'}
         </span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: /\d/.test(product.price) ? 'var(--text)' : 'var(--accent)', flexShrink: 0 }}>
-          {product.price || 'Free'}
-        </span>
 
-        {/* Actions */}
-        {product.featured && (
-          <span title="Featured" style={{ fontSize: 13, lineHeight: 1 }}>⭐</span>
-        )}
-        <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 4px' }} onClick={toggle}>
-          {product.visible ? '👁' : '🚫'}
-        </button>
-        <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 4px' }} onClick={remove}>✕</button>
-
-        {/* Expand toggle */}
-        <button
-          style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 4px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
-          onClick={() => setOpen(o => !o)}
-        >▾</button>
+        {/* Price + actions — fixed-width right group so buttons are always aligned */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, width: 140, justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: /\d/.test(product.price) ? 'var(--text)' : 'var(--accent)', minWidth: 36, textAlign: 'right' }}>
+            {product.price || 'Free'}
+          </span>
+          {product.featured && (
+            <span title="Featured" style={{ fontSize: 12, lineHeight: 1 }}>⭐</span>
+          )}
+          <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 6px' }} onClick={toggle}>
+            {product.visible ? '👁' : '🚫'}
+          </button>
+          <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 6px' }} onClick={remove}>✕</button>
+          <button
+            style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 6px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            onClick={() => setOpen(o => !o)}
+          >▾</button>
+        </div>
       </div>
 
       {/* Expandable fields */}

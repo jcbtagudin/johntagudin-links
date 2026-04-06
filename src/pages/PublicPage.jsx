@@ -312,7 +312,7 @@ function LatestVideoCard({ inlinePreview }) {
         <div className={styles.videoEmbedWrap}>
           <iframe
             className={styles.videoEmbed}
-            src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&rel=0`}
+            src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1&mute=1&rel=0`}
             title={video.title}
             allow="autoplay; encrypted-media; fullscreen"
             allowFullScreen
