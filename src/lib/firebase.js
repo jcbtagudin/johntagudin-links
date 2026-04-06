@@ -7,12 +7,12 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            || 'AIzaSyACoWXbmoaXZF6dR9GKVinEtsgI9ThTXUI',
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN        || 'my-link-in-bio-c4918.firebaseapp.com',
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID         || 'my-link-in-bio-c4918',
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET     || 'my-link-in-bio-c4918.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '465708074859',
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID             || '1:465708074859:web:3c5694e9f1e8460484ae2e',
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
 const app = initializeApp(firebaseConfig)
