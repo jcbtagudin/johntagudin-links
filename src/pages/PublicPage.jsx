@@ -409,6 +409,7 @@ function ProductsSection({ products, logClick, styles }) {
   const [expanded, setExpanded] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0)
   const sliderRef = useRef(null)
+  const dragRef = useRef({ dragging: false, startX: 0, scrollLeft: 0 })
 
   const visibleProducts = products?.items?.filter(p => p.visible) || []
   if (!visibleProducts.length) return null
@@ -428,6 +429,26 @@ function ProductsSection({ products, logClick, styles }) {
     setActiveSlide(Math.round(el.scrollLeft / (cardWidth + 12)))
   }
 
+  const onMouseDown = (e) => {
+    const el = sliderRef.current
+    if (!el) return
+    dragRef.current = { dragging: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft }
+    el.style.cursor = 'grabbing'
+    el.style.userSelect = 'none'
+  }
+  const onMouseMove = (e) => {
+    if (!dragRef.current.dragging) return
+    const el = sliderRef.current
+    if (!el) return
+    const x = e.pageX - el.offsetLeft
+    el.scrollLeft = dragRef.current.scrollLeft - (x - dragRef.current.startX)
+  }
+  const onMouseUp = () => {
+    dragRef.current.dragging = false
+    const el = sliderRef.current
+    if (el) { el.style.cursor = 'grab'; el.style.userSelect = '' }
+  }
+
   return (
     <div className={styles.productsSection}>
       <div className={styles.sectionLabel}>
@@ -441,6 +462,11 @@ function ProductsSection({ products, logClick, styles }) {
             className={styles.productsSlider}
             ref={sliderRef}
             onScroll={handleSliderScroll}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            style={{ cursor: 'grab' }}
           >
             {visibleProducts.map(product => (
               <a
