@@ -91,9 +91,35 @@ export default function PublicPage() {
   const visibleSocials = data.socials?.filter(s => s.visible) || []
   const visibleSections = data.sections?.filter(s => s.visible) || []
 
+  const socialsBottom = profile.socialsPosition === 'bottom'
+
+  const SocialsBar = visibleSocials.length > 0 ? (
+    <div className={styles.socials}>
+      {visibleSocials.map(s => (
+        <a key={s.id} href={s.url} target="_blank" rel="noopener" className={styles.pill}>
+          <SocialIcon name={s.icon} />
+          {s.label}
+        </a>
+      ))}
+    </div>
+  ) : null
+
   return (
     <div className={styles.page}>
       <div className={styles.glow} />
+
+      {/* FLOATING CONTACT BUTTON */}
+      {profile.showContactBtn && (
+        <div className={styles.contactBtnWrap}>
+          <a href={`mailto:${profile.email}`} className={styles.contactBtnFloat}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+            {profile.contactBtnStyle !== 'icon' && <span>{profile.contactBtnLabel || 'Contact me'}</span>}
+          </a>
+        </div>
+      )}
+
       <div className={styles.container}>
 
         {/* HERO */}
@@ -121,17 +147,8 @@ export default function PublicPage() {
           </div>
         </div>
 
-        {/* SOCIALS */}
-        {visibleSocials.length > 0 && (
-          <div className={styles.socials}>
-            {visibleSocials.map(s => (
-              <a key={s.id} href={s.url} target="_blank" rel="noopener" className={styles.pill}>
-                <SocialIcon name={s.icon} />
-                {s.label}
-              </a>
-            ))}
-          </div>
-        )}
+        {/* SOCIALS — top position (default) */}
+        {!socialsBottom && SocialsBar}
 
         {/* LATEST VIDEO — top position (default) */}
         {profile.showLatestVideo !== false && profile.latestVideoPosition !== 'bottom' && (
@@ -235,6 +252,9 @@ export default function PublicPage() {
         {profile.showEmailCapture === true && (
           <EmailCaptureCard profile={profile} />
         )}
+
+        {/* SOCIALS — bottom position */}
+        {socialsBottom && SocialsBar}
 
         {/* FOOTER */}
         <div className={styles.footer}>

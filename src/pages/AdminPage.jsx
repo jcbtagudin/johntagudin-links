@@ -349,6 +349,92 @@ function ProfileTab({ profile, update, onSaved }) {
         )}
       </div>
 
+      {/* ── Socials Position ── */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>SOCIALS POSITION</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Where the social pills appear on your page</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {['top', 'bottom'].map(pos => (
+            <button
+              key={pos}
+              onClick={() => set('socialsPosition', pos)}
+              style={{
+                ...s.iconBtn, padding: '6px 14px', fontSize: 12, borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: (form.socialsPosition || 'top') === pos ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
+                color: (form.socialsPosition || 'top') === pos ? 'var(--accent)' : 'var(--text2)',
+                fontWeight: (form.socialsPosition || 'top') === pos ? 600 : 400,
+              }}
+            >
+              {pos === 'top' ? '↑ Top' : '↓ Bottom'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Contact Button ── */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>CONTACT BUTTON</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Floating button at top-right that links to your email</div>
+          </div>
+          <button
+            onClick={() => set('showContactBtn', !form.showContactBtn)}
+            style={{
+              width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer',
+              background: form.showContactBtn ? 'var(--accent)' : 'var(--surface2)',
+              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3,
+              left: form.showContactBtn ? 20 : 3,
+              width: 16, height: 16, borderRadius: '50%',
+              background: form.showContactBtn ? '#000' : 'var(--muted)',
+              transition: 'left 0.2s',
+            }} />
+          </button>
+        </div>
+        {form.showContactBtn && (
+          <>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[['icon', '✉ Icon only'], ['text', '✉ Icon + text']].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => set('contactBtnStyle', val)}
+                  style={{
+                    ...s.iconBtn, padding: '6px 14px', fontSize: 12, borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: (form.contactBtnStyle || 'text') === val ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
+                    color: (form.contactBtnStyle || 'text') === val ? 'var(--accent)' : 'var(--text2)',
+                    fontWeight: (form.contactBtnStyle || 'text') === val ? 600 : 400,
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {(form.contactBtnStyle || 'text') !== 'icon' && (
+              <Field
+                label="BUTTON LABEL"
+                value={form.contactBtnLabel || ''}
+                onChange={v => set('contactBtnLabel', v)}
+                placeholder="Contact me"
+              />
+            )}
+          </>
+        )}
+      </div>
+
       <SaveBtn onClick={save} />
     </div>
   )

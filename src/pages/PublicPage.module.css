@@ -152,8 +152,8 @@
 .socials {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 36px;
+  gap: 6px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   animation: fadeUp 0.5s 0.1s ease both;
 }
@@ -161,12 +161,12 @@
 .pill {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 5px;
+  padding: 5px 10px;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 100px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text2);
   transition: all 0.2s ease;
@@ -179,6 +179,36 @@
   color: var(--text);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.contactBtnWrap {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+}
+
+.contactBtnFloat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  text-decoration: none;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.contactBtnFloat:hover {
+  color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
 }
 
 .videoCard {
