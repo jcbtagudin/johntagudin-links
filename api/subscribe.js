@@ -99,13 +99,25 @@ export default async function handler(req, res) {
       if (audienceError) console.error('[subscribe] Resend audience error:', audienceError)
     } catch (err) { console.error('[subscribe] Resend audience exception:', err) }
 
-    // Send welcome email using the Resend template
+    // Load welcome email HTML — prefer Firestore (editable via Admin), fall back to bundled file
+    let welcomeHtml = WELCOME_EMAIL_HTML
+    try {
+      const emailUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/email?key=${apiKey}`
+      const emailRes = await fetch(emailUrl)
+      if (emailRes.ok) {
+        const emailData = await emailRes.json()
+        const firestoreHtml = emailData?.fields?.welcomeEmailHtml?.stringValue
+        if (firestoreHtml && firestoreHtml.trim()) welcomeHtml = firestoreHtml.trim()
+      }
+    } catch (_) { /* Fall back to bundled HTML */ }
+
+    // Send welcome email
     try {
       const { error: emailError } = await resend.emails.send({
         from: fromAddress,
         to: [cleanEmail],
         subject: 'you made a good call 👋',
-        html: WELCOME_EMAIL_HTML,
+        html: welcomeHtml,
       })
       if (emailError) console.error('[subscribe] Resend email error:', emailError)
     } catch (err) { console.error('[subscribe] Resend email exception:', err) }
