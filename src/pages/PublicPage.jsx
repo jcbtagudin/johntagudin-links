@@ -646,9 +646,12 @@ function ReviewsSection() {
     }
   }
 
-  if (loading || !reviews.length) return null
+  if (loading) return null
 
-  const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+  const hasReviews = reviews.length > 0
+  const avg = hasReviews
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : null
 
   return (
     <div className={styles.reviewsSection}>
@@ -658,57 +661,63 @@ function ReviewsSection() {
         What People Say
       </div>
 
-      {/* Summary bar */}
-      <div className={styles.reviewSummary}>
-        <span className={styles.reviewAvgNum}>{avg}</span>
-        <span className={styles.reviewAvgStars}><StarDisplay rating={Math.round(parseFloat(avg))} size={13} /></span>
-        <span className={styles.reviewCount}>· {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</span>
-      </div>
-
-      {/* Carousel wrapper — arrows + scroll container */}
-      <div className={styles.reviewsCarouselWrap}
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
-        onTouchStart={() => setHovering(true)}
-        onTouchEnd={() => setTimeout(() => setHovering(false), 2000)}
-      >
-        {/* Left arrow */}
-        <button
-          className={`${styles.reviewArrow} ${styles.reviewArrowLeft}`}
-          onClick={() => scrollTo(activeIdx - 1)}
-          aria-label="Previous"
-          style={{ opacity: activeIdx === 0 ? 0 : 1 }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-
-        {/* Scroll container */}
-        <div
-          className={styles.reviewsCarousel}
-          ref={carouselRef}
-          onScroll={handleScroll}
-        >
-          {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
+      {/* Summary bar — only when there are approved reviews */}
+      {hasReviews && (
+        <div className={styles.reviewSummary}>
+          <span className={styles.reviewAvgNum}>{avg}</span>
+          <span className={styles.reviewAvgStars}><StarDisplay rating={Math.round(parseFloat(avg))} size={13} /></span>
+          <span className={styles.reviewCount}>· {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</span>
         </div>
+      )}
 
-        {/* Right arrow */}
-        <button
-          className={`${styles.reviewArrow} ${styles.reviewArrowRight}`}
-          onClick={() => scrollTo(activeIdx + 1)}
-          aria-label="Next"
-          style={{ opacity: activeIdx >= reviews.length - 1 ? 0 : 1 }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      </div>
+      {/* Carousel wrapper — only when there are approved reviews */}
+      {hasReviews && (
+        <>
+          <div className={styles.reviewsCarouselWrap}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            onTouchStart={() => setHovering(true)}
+            onTouchEnd={() => setTimeout(() => setHovering(false), 2000)}
+          >
+            {/* Left arrow */}
+            <button
+              className={`${styles.reviewArrow} ${styles.reviewArrowLeft}`}
+              onClick={() => scrollTo(activeIdx - 1)}
+              aria-label="Previous"
+              style={{ opacity: activeIdx === 0 ? 0 : 1 }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
 
-      {/* Dots */}
-      {reviews.length > 1 && (
-        <div className={styles.sliderDots} style={{ marginTop: 10 }}>
-          {reviews.map((_, i) => (
-            <div key={i} className={`${styles.sliderDot} ${i === activeIdx ? styles.sliderDotActive : ''}`} onClick={() => scrollTo(i)} style={{ cursor: 'pointer' }} />
-          ))}
-        </div>
+            {/* Scroll container */}
+            <div
+              className={styles.reviewsCarousel}
+              ref={carouselRef}
+              onScroll={handleScroll}
+            >
+              {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
+            </div>
+
+            {/* Right arrow */}
+            <button
+              className={`${styles.reviewArrow} ${styles.reviewArrowRight}`}
+              onClick={() => scrollTo(activeIdx + 1)}
+              aria-label="Next"
+              style={{ opacity: activeIdx >= reviews.length - 1 ? 0 : 1 }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+
+          {/* Dots */}
+          {reviews.length > 1 && (
+            <div className={styles.sliderDots} style={{ marginTop: 10 }}>
+              {reviews.map((_, i) => (
+                <div key={i} className={`${styles.sliderDot} ${i === activeIdx ? styles.sliderDotActive : ''}`} onClick={() => scrollTo(i)} style={{ cursor: 'pointer' }} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Leave a review */}
