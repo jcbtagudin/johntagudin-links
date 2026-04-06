@@ -995,11 +995,15 @@
 
 .cardWithThumb .cardRow {
   padding: 12px 16px;
-  margin-top: -18px;
-  border-radius: 14px 14px 0 0;
-  background: var(--surface);
-  position: relative;
 }
+
+.cardWithThumb.featured .cardRow {
+  background: #1A1A1A;
+}
+
+.cardWithThumb.featured .cardTitle { color: #ffffff; }
+.cardWithThumb.featured .cardSub   { color: rgba(255,255,255,0.5); }
+.cardWithThumb.featured .arrow     { color: rgba(255,255,255,0.4); }
 
 .cardThumb {
   width: 100%;
