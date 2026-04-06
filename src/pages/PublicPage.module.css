@@ -152,8 +152,8 @@
 .socials {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 36px;
+  gap: 6px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   animation: fadeUp 0.5s 0.1s ease both;
 }
@@ -161,12 +161,12 @@
 .pill {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 5px;
+  padding: 5px 10px;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 100px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text2);
   transition: all 0.2s ease;
@@ -179,6 +179,36 @@
   color: var(--text);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.contactBtnWrap {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+}
+
+.contactBtnFloat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  text-decoration: none;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.contactBtnFloat:hover {
+  color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
 }
 
 .videoCard {
@@ -451,6 +481,58 @@
 }
 
 .productCard:hover .productBtn { color: var(--text2); }
+
+/* ── Slider layout ── */
+.productsSlider {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.productsSlider::-webkit-scrollbar { display: none; }
+
+.productSliderCard {
+  flex-shrink: 0;
+  width: 160px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  color: var(--text);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.productSliderCard:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.sliderDots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+.sliderDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border2);
+  transition: all 0.2s ease;
+}
+.sliderDotActive {
+  width: 16px;
+  border-radius: 3px;
+  background: var(--accent);
+}
 
 .productsGrid {
   display: grid;

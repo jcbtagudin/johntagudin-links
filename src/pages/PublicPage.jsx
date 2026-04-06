@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
@@ -91,9 +91,35 @@ export default function PublicPage() {
   const visibleSocials = data.socials?.filter(s => s.visible) || []
   const visibleSections = data.sections?.filter(s => s.visible) || []
 
+  const socialsBottom = profile.socialsPosition === 'bottom'
+
+  const SocialsBar = visibleSocials.length > 0 ? (
+    <div className={styles.socials}>
+      {visibleSocials.map(s => (
+        <a key={s.id} href={s.url} target="_blank" rel="noopener" className={styles.pill}>
+          <SocialIcon name={s.icon} />
+          {s.label}
+        </a>
+      ))}
+    </div>
+  ) : null
+
   return (
     <div className={styles.page}>
       <div className={styles.glow} />
+
+      {/* FLOATING CONTACT BUTTON */}
+      {profile.showContactBtn && (
+        <div className={styles.contactBtnWrap}>
+          <a href={`mailto:${profile.email}`} className={styles.contactBtnFloat}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+            {profile.contactBtnStyle !== 'icon' && <span>{profile.contactBtnLabel || 'Contact me'}</span>}
+          </a>
+        </div>
+      )}
+
       <div className={styles.container}>
 
         {/* HERO */}
@@ -121,17 +147,8 @@ export default function PublicPage() {
           </div>
         </div>
 
-        {/* SOCIALS */}
-        {visibleSocials.length > 0 && (
-          <div className={styles.socials}>
-            {visibleSocials.map(s => (
-              <a key={s.id} href={s.url} target="_blank" rel="noopener" className={styles.pill}>
-                <SocialIcon name={s.icon} />
-                {s.label}
-              </a>
-            ))}
-          </div>
-        )}
+        {/* SOCIALS — top position (default) */}
+        {!socialsBottom && SocialsBar}
 
         {/* LATEST VIDEO — top position (default) */}
         {profile.showLatestVideo !== false && profile.latestVideoPosition !== 'bottom' && (
@@ -235,6 +252,9 @@ export default function PublicPage() {
         {profile.showEmailCapture === true && (
           <EmailCaptureCard profile={profile} />
         )}
+
+        {/* SOCIALS — bottom position */}
+        {socialsBottom && SocialsBar}
 
         {/* FOOTER */}
         <div className={styles.footer}>
@@ -371,20 +391,76 @@ const COLLAPSE_THRESHOLD = 3
 
 function ProductsSection({ products, logClick, styles }) {
   const [expanded, setExpanded] = useState(false)
+  const [activeSlide, setActiveSlide] = useState(0)
+  const sliderRef = useRef(null)
+
   const visibleProducts = products?.items?.filter(p => p.visible) || []
   if (!visibleProducts.length) return null
 
-  const isGrid = products?.layout === 'grid'
+  const layout = products?.layout || 'rows'
+  const isGrid   = layout === 'grid'
+  const isSlider = layout === 'slider'
   const sectionTitle = products?.title || 'My Products'
   const getPriceClass = (price) => /\d/.test(price) ? styles.productPriceWhite : styles.productPrice
   const hasMore = visibleProducts.length > COLLAPSE_THRESHOLD
   const shown = hasMore && !expanded ? visibleProducts.slice(0, COLLAPSE_THRESHOLD) : visibleProducts
 
+  const handleSliderScroll = () => {
+    const el = sliderRef.current
+    if (!el) return
+    const cardWidth = el.firstChild?.offsetWidth || 1
+    setActiveSlide(Math.round(el.scrollLeft / (cardWidth + 12)))
+  }
+
   return (
     <div className={styles.productsSection}>
       <div className={styles.sectionLabel}>🛍️ {sectionTitle}</div>
 
-      {isGrid ? (
+      {isSlider ? (
+        <>
+          <div
+            className={styles.productsSlider}
+            ref={sliderRef}
+            onScroll={handleSliderScroll}
+          >
+            {visibleProducts.map(product => (
+              <a
+                key={product.id}
+                href={product.url}
+                target="_blank"
+                rel="noopener"
+                className={`${styles.productSliderCard} ${product.featured ? styles.featuredProduct : ''}`}
+                onClick={() => logClick(product.id, product.name, 'products', meta)}
+              >
+                <div className={styles.productThumbGrid}>
+                  {product.thumbnailUrl
+                    ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                    : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                  }
+                </div>
+                <div className={styles.productInfoGrid}>
+                  <div className={styles.productNameGrid}>{product.name}</div>
+                  <div className={styles.productDescGrid}>{product.description}</div>
+                  <div className={styles.productMetaGrid}>
+                    <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
+                    <span className={styles.productBtn}>Get it →</span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+          {visibleProducts.length > 1 && (
+            <div className={styles.sliderDots}>
+              {visibleProducts.map((_, i) => (
+                <div
+                  key={i}
+                  className={`${styles.sliderDot} ${i === activeSlide ? styles.sliderDotActive : ''}`}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      ) : isGrid ? (
         <div className={styles.productsGrid}>
           {shown.map(product => (
             <a
@@ -442,7 +518,7 @@ function ProductsSection({ products, logClick, styles }) {
         </div>
       )}
 
-      {hasMore && (
+      {!isSlider && hasMore && (
         <button className={styles.showMoreBtn} onClick={() => setExpanded(e => !e)}>
           {expanded
             ? 'Show less ▲'
