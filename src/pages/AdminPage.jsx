@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, storage } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews, removeSubscriber } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -1286,6 +1286,10 @@ function SubscribersTab() {
                 <span style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0, marginLeft: 16 }}>
                   {date}
                 </span>
+                <button
+                  onClick={() => { if (window.confirm(`Remove ${sub.email}?`)) removeSubscriber(sub.id) }}
+                  style={{ ...s.iconBtn, color: 'var(--red)', fontSize: 13, marginLeft: 8, flexShrink: 0 }}
+                >✕</button>
               </div>
             )
           })

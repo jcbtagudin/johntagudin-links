@@ -296,7 +296,7 @@ export const WELCOME_EMAIL_HTML = `<!DOCTYPE html>
             <td align="center">
               <p style="font-family:'Courier New',Courier,monospace; font-size:10px; color:#aaaaaa; letter-spacing:0.3px; line-height:1.7; margin:0; padding:0;">
                 You subscribed at johntagudin.com &nbsp;&middot;&nbsp;
-                <a href="{{unsubscribe_url}}" style="color:#aaaaaa; text-decoration:underline;">Unsubscribe</a>
+                <a href="https://johntagudin.com/api/unsubscribe?email={{EMAIL}}" style="color:#aaaaaa; text-decoration:underline;">Unsubscribe</a>
                 &nbsp;&middot;&nbsp;
                 <a href="mailto:hello@johntagudin.com" style="color:#aaaaaa; text-decoration:underline;">hello@johntagudin.com</a>
               </p>

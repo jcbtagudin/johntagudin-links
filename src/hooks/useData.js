@@ -211,6 +211,10 @@ export function useSubscribers() {
   return { subscribers, loading }
 }
 
+export async function removeSubscriber(id) {
+  await deleteDoc(doc(db, 'subscribers', id))
+}
+
 export function useAnalytics() {
   const [clicks, setClicks] = useState([])
   const [pageViews, setPageViews] = useState([])
