@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
-  doc, onSnapshot, setDoc, updateDoc,
-  collection, addDoc, serverTimestamp, query, orderBy, limit
+  doc, onSnapshot, setDoc, updateDoc, deleteDoc,
+  collection, addDoc, serverTimestamp, query, orderBy, limit, where
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 
@@ -237,6 +237,70 @@ export function useAnalytics() {
   }, [])
 
   return { clicks, pageViews, loading }
+}
+
+// ─── REVIEWS ──────────────────────────────────────────────────────────────────
+
+// Public: approved reviews only, pinned first, newest first, max 20
+export function useApprovedReviews() {
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const q = query(
+      collection(db, 'reviews'),
+      where('status', '==', 'approved'),
+      limit(20)
+    )
+    const unsub = onSnapshot(q, snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      data.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1
+        if (!a.pinned && b.pinned) return 1
+        const ta = a.createdAt?.toMillis?.() || 0
+        const tb = b.createdAt?.toMillis?.() || 0
+        return tb - ta
+      })
+      setReviews(data)
+      setLoading(false)
+    }, () => setLoading(false))
+    return unsub
+  }, [])
+
+  return { reviews, loading }
+}
+
+// Admin: all reviews, newest first
+export function useAdminReviews() {
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'), limit(500))
+    const unsub = onSnapshot(q, snap => {
+      setReviews(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setLoading(false)
+    }, () => setLoading(false))
+    return unsub
+  }, [])
+
+  const approve   = (id) => updateDoc(doc(db, 'reviews', id), { status: 'approved' })
+  const reject    = (id) => updateDoc(doc(db, 'reviews', id), { status: 'rejected' })
+  const unapprove = (id) => updateDoc(doc(db, 'reviews', id), { status: 'pending' })
+  const remove    = (id) => deleteDoc(doc(db, 'reviews', id))
+  const togglePin = (id, current) => updateDoc(doc(db, 'reviews', id), { pinned: !current })
+
+  return { reviews, loading, approve, reject, unapprove, remove, togglePin }
+}
+
+// Submit a new review (public)
+export async function submitReview({ name, rating, comment }) {
+  await addDoc(collection(db, 'reviews'), {
+    name, rating, comment,
+    status: 'pending',
+    pinned: false,
+    createdAt: serverTimestamp(),
+  })
 }
 
 // ─── EMAIL CONFIG ─────────────────────────────────────────────────────────────

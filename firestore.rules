@@ -27,5 +27,13 @@ service cloud.firestore {
       allow read, list: if request.auth != null
         && request.auth.token.email == "johneilcarltagudin@gmail.com";
     }
+
+    // Reviews — anyone can submit or read, only John can approve/reject/delete
+    match /reviews/{doc} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if request.auth != null
+        && request.auth.token.email == "johneilcarltagudin@gmail.com";
+    }
   }
 }
