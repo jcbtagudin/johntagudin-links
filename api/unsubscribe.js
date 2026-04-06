@@ -68,7 +68,7 @@ function page(message, success) {
   <div class="card">
     <div class="icon">${success ? '✓' : '✗'}</div>
     <h1>${message}</h1>
-    <p>${success ? "You won't receive any more emails from us.<br/>Changed your mind? <a href='https://johntagudin-links.vercel.app'>Re-subscribe here.</a>" : 'Please try again or contact <a href="mailto:hello@johntagudin.com">hello@johntagudin.com</a>.'}</p>
+    <p>${success ? "You won't receive any more emails from us.<br/>Changed your mind? <a href='https://www.johntagudin.com'>Re-subscribe here.</a>" : 'Please try again or contact <a href="mailto:hello@johntagudin.com">hello@johntagudin.com</a>.'}</p>
   </div>
 </body>
 </html>`
