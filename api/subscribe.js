@@ -7,6 +7,7 @@
 //   no separate read query needed, no auth required, works with allow create: if true.
 
 import { Resend } from 'resend'
+import { WELCOME_EMAIL_HTML } from './welcome-email.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -104,7 +105,7 @@ export default async function handler(req, res) {
         from: fromAddress,
         to: [cleanEmail],
         subject: 'you made a good call 👋',
-        template_id: 'c3b3d8e9-a07a-4354-bdb9-38e2a44521ed',
+        html: WELCOME_EMAIL_HTML,
       })
       if (emailError) console.error('[subscribe] Resend email error:', emailError)
     } catch (err) { console.error('[subscribe] Resend email exception:', err) }

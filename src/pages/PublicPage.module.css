@@ -1023,6 +1023,13 @@
 
 .emailInputError { border-color: #DC2626 !important; }
 
+.emailErrorMsg {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #DC2626;
+  text-align: left;
+}
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   20%       { transform: translateX(-6px); }
