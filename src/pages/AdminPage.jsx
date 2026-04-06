@@ -978,12 +978,18 @@ function PinnedTab({ onSaved }) {
 // ─── EMAIL TAB ────────────────────────────────────────────────────────────────
 function EmailTab({ onSaved }) {
   const { emailConfig, loading, save } = useEmailConfig()
-  const [html, setHtml] = useState('')
-  const [preview, setPreview] = useState(false)
+  const [from,        setFrom]        = useState('')
+  const [subject,     setSubject]     = useState('')
+  const [previewText, setPreviewText] = useState('')
+  const [html,        setHtml]        = useState('')
+  const [preview,     setPreview]     = useState(false)
 
   // Populate once data loads
   React.useEffect(() => {
     if (!loading && emailConfig !== null) {
+      setFrom(emailConfig.from || '')
+      setSubject(emailConfig.subject || '')
+      setPreviewText(emailConfig.previewText || '')
       setHtml(emailConfig.welcomeEmailHtml || '')
     }
   }, [loading, emailConfig])
@@ -991,7 +997,7 @@ function EmailTab({ onSaved }) {
   if (loading) return <Loader />
 
   const handleSave = async () => {
-    await save({ welcomeEmailHtml: html })
+    await save({ from, subject, previewText, welcomeEmailHtml: html })
     onSaved()
   }
 
@@ -1003,12 +1009,34 @@ function EmailTab({ onSaved }) {
         background: 'rgba(74,124,64,0.06)', border: '1px solid rgba(74,124,64,0.2)',
         borderRadius: 10, padding: '12px 16px', fontSize: 13, color: 'var(--text2)', lineHeight: 1.6,
       }}>
-        <strong style={{ color: 'var(--accent)' }}>Welcome Email HTML</strong> — paste your email HTML here.
-        Sent automatically to every new subscriber. Leave blank to skip sending a welcome email.
+        <strong style={{ color: 'var(--accent)' }}>Welcome Email</strong> — sent automatically to every new subscriber.
+        Changes save to Firestore and apply to all future sends instantly.
       </div>
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      {/* From / Subject / Preview Text */}
+      <Field
+        label='From (e.g. John Tagudin <hello@johntagudin.com>)'
+        value={from}
+        onChange={setFrom}
+        placeholder="John Tagudin <hello@johntagudin.com>"
+      />
+      <Field
+        label="Subject"
+        value={subject}
+        onChange={setSubject}
+        placeholder="you made a good call 👋"
+      />
+      <Field
+        label="Preview Text (shown in inbox before opening — keep under 90 chars)"
+        value={previewText}
+        onChange={setPreviewText}
+        placeholder="Here's what you get access to..."
+      />
+
+      {/* HTML toolbar */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+        <label style={{ ...s.label, marginBottom: 0 }}>HTML Body</label>
+        <div style={{ flex: 1 }} />
         <button
           style={{
             ...s.iconBtn, padding: '8px 14px', fontSize: 12, fontWeight: 600,
@@ -1021,7 +1049,7 @@ function EmailTab({ onSaved }) {
           {preview ? '✕ Close Preview' : '👁 Preview'}
         </button>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-          {html.length.toLocaleString()} characters
+          {html.length.toLocaleString()} chars
         </span>
       </div>
 

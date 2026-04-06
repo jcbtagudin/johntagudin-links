@@ -74,17 +74,29 @@ export default async function handler(req, res) {
   const RESEND_API_KEY     = process.env.RESEND_API_KEY
   const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID
 
-  // Read sender address from Firestore config/profile (publicly readable, no auth needed)
+  // Load email config from Firestore (from, subject, previewText, html)
   let fromAddress = 'John Tagudin <hello@johntagudin.com>'
+  let emailSubject = 'you made a good call 👋'
+  let welcomeHtml  = WELCOME_EMAIL_HTML
+  let previewText  = ''
   try {
-    const profileUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/profile?key=${apiKey}`
-    const profileRes = await fetch(profileUrl)
-    if (profileRes.ok) {
-      const profileData = await profileRes.json()
-      const resendFrom  = profileData?.fields?.resendFrom?.stringValue
-      if (resendFrom && resendFrom.trim()) fromAddress = resendFrom.trim()
+    const emailUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/email?key=${apiKey}`
+    const emailRes = await fetch(emailUrl)
+    if (emailRes.ok) {
+      const emailData = await emailRes.json()
+      const f = emailData?.fields || {}
+      if (f.from?.stringValue?.trim())             fromAddress  = f.from.stringValue.trim()
+      if (f.subject?.stringValue?.trim())           emailSubject = f.subject.stringValue.trim()
+      if (f.previewText?.stringValue?.trim())       previewText  = f.previewText.stringValue.trim()
+      if (f.welcomeEmailHtml?.stringValue?.trim())  welcomeHtml  = f.welcomeEmailHtml.stringValue.trim()
     }
-  } catch (_) { /* Fall back to default sender */ }
+  } catch (_) { /* Fall back to defaults */ }
+
+  // Inject preview text as hidden preheader right after <body ...>
+  if (previewText) {
+    const preheader = `<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:transparent;">${previewText}</div>`
+    welcomeHtml = welcomeHtml.replace(/(<body[^>]*>)/i, `$1${preheader}`)
+  }
 
   if (RESEND_API_KEY && RESEND_AUDIENCE_ID) {
     const resend = new Resend(RESEND_API_KEY)
@@ -99,24 +111,12 @@ export default async function handler(req, res) {
       if (audienceError) console.error('[subscribe] Resend audience error:', audienceError)
     } catch (err) { console.error('[subscribe] Resend audience exception:', err) }
 
-    // Load welcome email HTML — prefer Firestore (editable via Admin), fall back to bundled file
-    let welcomeHtml = WELCOME_EMAIL_HTML
-    try {
-      const emailUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/config/email?key=${apiKey}`
-      const emailRes = await fetch(emailUrl)
-      if (emailRes.ok) {
-        const emailData = await emailRes.json()
-        const firestoreHtml = emailData?.fields?.welcomeEmailHtml?.stringValue
-        if (firestoreHtml && firestoreHtml.trim()) welcomeHtml = firestoreHtml.trim()
-      }
-    } catch (_) { /* Fall back to bundled HTML */ }
-
     // Send welcome email
     try {
       const { error: emailError } = await resend.emails.send({
         from: fromAddress,
         to: [cleanEmail],
-        subject: 'you made a good call 👋',
+        subject: emailSubject,
         html: welcomeHtml,
       })
       if (emailError) console.error('[subscribe] Resend email error:', emailError)
