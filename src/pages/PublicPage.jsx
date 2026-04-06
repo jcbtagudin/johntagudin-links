@@ -158,7 +158,10 @@ export default function PublicPage() {
         {/* PINNED LINK */}
         {pinned?.enabled && pinned?.url && (
           <div className={styles.pinnedSection}>
-            <div className={styles.pinnedLabel}>📌 Pinned</div>
+            <div className={styles.pinnedLabel}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign:'middle',marginRight:5}}><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+              Pinned
+            </div>
             <div className={`${styles.pinnedGlowWrap} ${cursorActive ? styles.pinnedGlowBounce : ''}`}>
 
               <a
@@ -315,7 +318,10 @@ function LatestVideoCard({ inlinePreview }) {
           onError={e => e.target.style.display = 'none'}
         />
         <div className={styles.videoInfo}>
-          <div className={styles.videoLabel}>▶ Latest Video</div>
+          <div className={styles.videoLabel}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{verticalAlign:'middle',marginRight:5}}><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Latest Video
+          </div>
           <div className={styles.videoTitle}>{video.title}</div>
           <div className={styles.videoMeta}>{timeAgo(video.publishedAt)}</div>
         </div>
@@ -341,7 +347,10 @@ function LatestVideoCard({ inlinePreview }) {
         {/* Footer row */}
         <div className={styles.videoEmbedFooter}>
           <div className={styles.videoInfo}>
-            <div className={styles.videoLabel}>▶ Latest Video</div>
+            <div className={styles.videoLabel}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{verticalAlign:'middle',marginRight:5}}><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Latest Video
+          </div>
             <div className={styles.videoTitle}>{video.title}</div>
           </div>
           <div className={styles.videoEmbedActions}>
@@ -380,7 +389,9 @@ function LatestVideoCard({ inlinePreview }) {
         <div className={styles.videoTitle}>{video.title}</div>
         <div className={styles.videoMeta}>{timeAgo(video.publishedAt)}</div>
       </div>
-      <div className={styles.videoWatch} onClick={() => setPlaying(true)}>Play ▶</div>
+      <div className={styles.videoWatch} onClick={() => setPlaying(true)}>
+        Play <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{verticalAlign:'middle',marginLeft:3}}><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </div>
     </div>
   )
 }
@@ -414,7 +425,10 @@ function ProductsSection({ products, logClick, styles }) {
 
   return (
     <div className={styles.productsSection}>
-      <div className={styles.sectionLabel}>🛍️ {sectionTitle}</div>
+      <div className={styles.sectionLabel}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign:'middle',marginRight:5}}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        {sectionTitle}
+      </div>
 
       {isSlider ? (
         <>
@@ -560,6 +574,7 @@ function EmailCaptureCard({ profile }) {
   const headline = profile.captureHeadline || "For when you're too tired to figure this out yourself"
   const subtext  = profile.captureSubtext  || "I share AI tools, shortcuts, and workflows that actually save time — only when I find something worth sharing. No spam. No schedule."
   const proof    = profile.captureProof    || "Joined by 500K+ creators"
+  const btnText  = profile.captureBtn      || "I need this"
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -592,7 +607,10 @@ function EmailCaptureCard({ profile }) {
   if (status === 'success') {
     return (
       <div className={styles.emailCard}>
-        <p className={styles.emailSuccess}>✓ You're in. Check your inbox for something useful.</p>
+        <p className={styles.emailSuccess}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign:'middle',marginRight:6}}><polyline points="20 6 9 17 4 12"/></svg>
+          You're in. Check your inbox for something useful.
+        </p>
       </div>
     )
   }
@@ -623,7 +641,7 @@ function EmailCaptureCard({ profile }) {
           className={styles.emailBtn}
           disabled={status === 'loading'}
         >
-          {status === 'loading' ? '...' : 'Subscribe'}
+          {status === 'loading' ? '...' : btnText}
         </button>
       </form>
       {status === 'error' && errorMsg && (

@@ -345,6 +345,12 @@ function ProfileTab({ profile, update, onSaved }) {
               onChange={v => set('captureProof', v)}
               placeholder="Joined by 500K+ creators"
             />
+            <Field
+              label="BUTTON TEXT"
+              value={form.captureBtn || ''}
+              onChange={v => set('captureBtn', v)}
+              placeholder="I need this"
+            />
           </>
         )}
       </div>

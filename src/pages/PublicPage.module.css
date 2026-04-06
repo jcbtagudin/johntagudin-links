@@ -245,6 +245,8 @@
 .videoInfo { flex: 1; min-width: 0; }
 
 .videoLabel {
+  display: flex;
+  align-items: center;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -738,6 +740,8 @@
 }
 
 .pinnedLabel {
+  display: flex;
+  align-items: center;
   font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
@@ -841,6 +845,8 @@
 }
 
 .sectionLabel {
+  display: flex;
+  align-items: center;
   font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
@@ -1147,6 +1153,9 @@
 .emailBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .emailSuccess {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
