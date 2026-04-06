@@ -3,3 +3,5 @@ dist
 .env.local
 .env
 firebase-debug.log
+
+.vercel
