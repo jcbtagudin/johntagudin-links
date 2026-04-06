@@ -599,15 +599,20 @@ function EmailCaptureCard({ profile }) {
 
   return (
     <div className={styles.emailCard}>
-      <span className={styles.emailIcon}>🔋</span>
-      <h2 className={styles.emailHeadline}>{headline}</h2>
+      <div className={styles.emailHeadingRow}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={styles.emailIcon}>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <h2 className={styles.emailHeadline}>{headline}</h2>
+      </div>
       <p className={styles.emailSubtext}>{subtext}</p>
       <p className={styles.emailProof}>{proof}</p>
       <form className={styles.emailForm} onSubmit={handleSubmit} noValidate>
         <input
           className={`${styles.emailInput} ${status === 'error' ? styles.emailInputError : ''} ${shake ? styles.emailInputShake : ''}`}
           type="email"
-          placeholder="your@email.com"
+          placeholder="Your Email"
           value={email}
           onChange={e => { setEmail(e.target.value); if (status === 'error') { setStatus('idle'); setErrorMsg('') } }}
           disabled={status === 'loading'}
@@ -618,7 +623,7 @@ function EmailCaptureCard({ profile }) {
           className={styles.emailBtn}
           disabled={status === 'loading'}
         >
-          {status === 'loading' ? '...' : 'I need this'}
+          {status === 'loading' ? '...' : 'Subscribe'}
         </button>
       </form>
       {status === 'error' && errorMsg && (
