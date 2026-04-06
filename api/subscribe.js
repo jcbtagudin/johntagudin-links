@@ -31,21 +31,16 @@ export default async function handler(req, res) {
   const emailDocId = Buffer.from(cleanEmail).toString('base64url')
 
   // ── 1. Atomic write to Firestore ──────────────────────────────────────────
-  // PATCH + currentDocument.exists=false:
-  //   • Doc doesn't exist → creates it → 200 ✓ new subscriber
-  //   • Doc already exists → Firestore returns 409 → already subscribed, skip Resend
-  //   • Any other error  → 5xx → tell the user to retry
+  // POST with ?documentId= creates a document with a specific ID.
+  // If the document already exists Firestore returns 409 ALREADY_EXISTS —
+  // this is the reliable duplicate check that requires no prior read or auth.
   let isNewSubscriber = true
   try {
-    const now    = new Date().toISOString()
-    const fsUrl  = [
-      `https://firestore.googleapis.com/v1/projects/${projectId}`,
-      `/databases/(default)/documents/subscribers/${emailDocId}`,
-      `?currentDocument.exists=false&key=${apiKey}`,
-    ].join('')
+    const now   = new Date().toISOString()
+    const fsUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/subscribers?documentId=${emailDocId}&key=${apiKey}`
 
     const fsRes = await fetch(fsUrl, {
-      method: 'PATCH',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fields: {
@@ -57,7 +52,7 @@ export default async function handler(req, res) {
     })
 
     if (fsRes.status === 409) {
-      // Already subscribed — return success silently, skip Resend entirely
+      // ALREADY_EXISTS — already subscribed, skip Resend entirely
       isNewSubscriber = false
     } else if (!fsRes.ok) {
       const err = await fsRes.text()
