@@ -222,22 +222,29 @@ export default function PublicPage() {
                       href={link.url}
                       target="_blank"
                       rel="noopener"
-                      className={`${styles.card} ${link.featured ? styles.featured : ''}`}
+                      className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
                       onClick={() => logClick(link.id, link.title, section.id, meta)}
                     >
-                      <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''}`}>
-                        {link.icon}
-                      </div>
-                      <div className={styles.cardText}>
-                        <div className={styles.cardTitle}>{link.title}</div>
-                        <div className={styles.cardSub}>{link.subtitle}</div>
-                      </div>
-                      {badge && (
-                        <span className={`${styles.badge} ${styles[badge.cls]}`}>
-                          {badge.label}
-                        </span>
+                      {link.thumbnail && (
+                        <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
                       )}
-                      <Arrow />
+                      <div className={styles.cardRow}>
+                        <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
+                          {link.iconImage
+                            ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                            : link.icon}
+                        </div>
+                        <div className={styles.cardText}>
+                          <div className={styles.cardTitle}>{link.title}</div>
+                          <div className={styles.cardSub}>{link.subtitle}</div>
+                        </div>
+                        {badge && (
+                          <span className={`${styles.badge} ${styles[badge.cls]}`}>
+                            {badge.label}
+                          </span>
+                        )}
+                        <Arrow />
+                      </div>
                     </a>
                   )
                 })}

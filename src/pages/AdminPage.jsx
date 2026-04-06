@@ -658,7 +658,18 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
 
         {/* Row 1: icon, title, badge */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <input style={{ ...s.input, width: 60 }} placeholder="Icon" value={link.icon} onChange={e => onUpdate('icon', e.target.value)} title="Emoji icon" />
+          {link.iconImage
+            ? <input style={{ ...s.input, flex: 1 }} placeholder="Icon image URL (https://...)" value={link.iconImage} onChange={e => onUpdate('iconImage', e.target.value)} />
+            : <input style={{ ...s.input, width: 60 }} placeholder="Icon" value={link.icon || ''} onChange={e => onUpdate('icon', e.target.value)} title="Emoji icon" />
+          }
+          <button
+            type="button"
+            title={link.iconImage ? 'Switch to emoji icon' : 'Switch to image icon'}
+            style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, whiteSpace: 'nowrap', background: link.iconImage ? 'rgba(74,124,64,0.12)' : 'transparent', color: link.iconImage ? 'var(--accent)' : 'var(--text2)' }}
+            onClick={() => link.iconImage ? onUpdate('iconImage', '') : onUpdate('iconImage', 'https://')}
+          >
+            {link.iconImage ? '🖼 IMG' : '🔤 Emoji'}
+          </button>
           <input style={{ ...s.input, flex: 1 }} placeholder="Title" value={link.title} onChange={e => onUpdate('title', e.target.value)} />
           <select style={s.select} value={link.badge} onChange={e => onUpdate('badge', e.target.value)}>
             <option value="">No badge</option>
@@ -673,6 +684,9 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
 
         {/* Row 3: URL */}
         <input style={s.input} placeholder="URL (https://...)" value={link.url} onChange={e => onUpdate('url', e.target.value)} />
+
+        {/* Row 3b: thumbnail */}
+        <input style={s.input} placeholder="Thumbnail image URL (optional)" value={link.thumbnail || ''} onChange={e => onUpdate('thumbnail', e.target.value)} />
 
         {/* Row 4: checkboxes + schedule toggle */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)' }}>
