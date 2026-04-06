@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import { signOut } from 'firebase/auth'
-import { auth } from '../lib/firebase'
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { auth, storage } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
 import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
@@ -188,7 +189,7 @@ function ProfileTab({ profile, update, onSaved }) {
     <div style={s.tabBody}>
       <Field label="Display Name" value={form.name} onChange={v => set('name', v)} />
       <Field label="Handle (e.g. @john.tagudin)" value={form.handle} onChange={v => set('handle', v)} />
-      <Field label="Avatar URL" value={form.avatarUrl} onChange={v => set('avatarUrl', v)} />
+      <ImageUploadField label="AVATAR IMAGE" value={form.avatarUrl} onChange={v => set('avatarUrl', v)} path="avatars" placeholder="https://... or upload" />
       {form.avatarUrl && (
         <div style={{ marginBottom: '16px' }}>
           <img src={form.avatarUrl} alt="preview" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
@@ -658,7 +659,22 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
 
         {/* Row 1: icon, title, badge */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <input style={{ ...s.input, width: 60 }} placeholder="Icon" value={link.icon} onChange={e => onUpdate('icon', e.target.value)} title="Emoji icon" />
+          {link.iconImage ? (
+            <>
+              <input style={{ ...s.input, flex: 1 }} placeholder="Icon image URL (https://...)" value={link.iconImage} onChange={e => onUpdate('iconImage', e.target.value)} />
+              <button type="button" style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, whiteSpace: 'nowrap' }} onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=async(e)=>{ const f=e.target.files?.[0]; if(!f||f.size>5*1024*1024) return; const sr=storageRef(storage,`links/${Date.now()}_${f.name}`); await uploadBytes(sr,f); onUpdate('iconImage', await getDownloadURL(sr)) }; i.click() }}>↑</button>
+            </>
+          ) : (
+            <input style={{ ...s.input, width: 60 }} placeholder="Icon" value={link.icon || ''} onChange={e => onUpdate('icon', e.target.value)} title="Emoji icon" />
+          )}
+          <button
+            type="button"
+            title={link.iconImage ? 'Switch to emoji icon' : 'Switch to image icon'}
+            style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, whiteSpace: 'nowrap', background: link.iconImage ? 'rgba(74,124,64,0.12)' : 'transparent', color: link.iconImage ? 'var(--accent)' : 'var(--text2)' }}
+            onClick={() => link.iconImage ? onUpdate('iconImage', '') : onUpdate('iconImage', 'https://')}
+          >
+            {link.iconImage ? '🖼 IMG' : '🔤 Emoji'}
+          </button>
           <input style={{ ...s.input, flex: 1 }} placeholder="Title" value={link.title} onChange={e => onUpdate('title', e.target.value)} />
           <select style={s.select} value={link.badge} onChange={e => onUpdate('badge', e.target.value)}>
             <option value="">No badge</option>
@@ -673,6 +689,14 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
 
         {/* Row 3: URL */}
         <input style={s.input} placeholder="URL (https://...)" value={link.url} onChange={e => onUpdate('url', e.target.value)} />
+
+        {/* Row 3b: thumbnail */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {link.thumbnail && (
+            <img src={link.thumbnail} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0 }} onError={e => e.currentTarget.style.display = 'none'} />
+          )}
+          <ImageUploadField value={link.thumbnail || ''} onChange={v => onUpdate('thumbnail', v)} path="links" placeholder="Thumbnail image URL (optional)" />
+        </div>
 
         {/* Row 4: checkboxes + schedule toggle */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)' }}>
@@ -923,12 +947,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
             value={product.url}
             onChange={e => update('url', e.target.value)}
           />
-          <input
-            style={s.input}
-            placeholder="Thumbnail URL (optional)"
-            value={product.thumbnailUrl}
-            onChange={e => update('thumbnailUrl', e.target.value)}
-          />
+          <ImageUploadField value={product.thumbnailUrl} onChange={v => update('thumbnailUrl', v)} path="products" placeholder="Thumbnail URL (optional)" />
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: 'var(--text2)', gridColumn: '1 / -1' }}>
             <input type="checkbox" checked={product.featured || false} onChange={e => update('featured', e.target.checked)} />
             ⭐ Featured — dark card + vibrate animation
@@ -1035,7 +1054,7 @@ function PinnedTab({ onSaved }) {
 
       <Field label="SUBTITLE" value={form.subtitle} onChange={v => set('subtitle', v)} placeholder="e.g. Watch my latest video on AI tools" />
       <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />
-      <Field label="THUMBNAIL IMAGE URL" value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} placeholder="https://... (paste any image URL for the card preview)" />
+      <ImageUploadField label="THUMBNAIL IMAGE" value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} path="pinned" placeholder="https://... or upload" />
 
       {/* Live preview */}
       <div>
@@ -1792,6 +1811,49 @@ function ReviewsTab({ profile, update, onSaved }) {
 }
 
 // ─── SMALL COMPONENTS ────────────────────────────────────────────────────────
+function ImageUploadField({ label, value, onChange, placeholder, path = 'images' }) {
+  const fileRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadErr, setUploadErr] = useState('')
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { setUploadErr('Max 5 MB'); return }
+    setUploadErr(''); setUploading(true)
+    try {
+      const sr = storageRef(storage, `${path}/${Date.now()}_${file.name}`)
+      await uploadBytes(sr, file)
+      const url = await getDownloadURL(sr)
+      onChange(url)
+    } catch {
+      setUploadErr('Upload failed. Try again.')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  return (
+    <div style={s.field}>
+      {label && <label style={s.label}>{label}</label>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input style={{ ...s.input, flex: 1 }} value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder || 'https://...'} />
+        <button
+          type="button"
+          style={{ ...s.iconBtn, fontSize: 12, padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 8, whiteSpace: 'nowrap', color: uploading ? 'var(--muted)' : 'var(--text2)' }}
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? 'Uploading...' : '↑ Upload'}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+      </div>
+      {uploadErr && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4 }}>{uploadErr}</div>}
+    </div>
+  )
+}
+
 function Field({ label, value, onChange, multiline, placeholder }) {
   return (
     <div style={s.field}>

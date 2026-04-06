@@ -517,6 +517,37 @@
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 
+.sliderWrapper {
+  position: relative;
+}
+
+.sliderArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text2);
+  transition: background 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.sliderArrow:hover { background: var(--surface2); }
+.sliderArrowLeft  { left: -14px; }
+.sliderArrowRight { right: -14px; }
+
+@media (max-width: 600px) {
+  .sliderArrow { display: none; }
+}
+
 .sliderDots {
   display: flex;
   justify-content: center;
@@ -946,6 +977,36 @@
 .featured .icon {
   background: rgba(255,255,255,0.08);
   border-color: rgba(255,255,255,0.1);
+}
+
+.cardRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.cardWithThumb {
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.cardWithThumb .cardRow {
+  padding: 12px 16px;
+  margin-top: -18px;
+  border-radius: 14px 14px 0 0;
+  background: var(--surface);
+  position: relative;
+}
+
+.cardThumb {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  border-radius: 14px 14px 0 0;
 }
 
 .cardText { flex: 1; min-width: 0; }

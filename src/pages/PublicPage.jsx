@@ -222,22 +222,29 @@ export default function PublicPage() {
                       href={link.url}
                       target="_blank"
                       rel="noopener"
-                      className={`${styles.card} ${link.featured ? styles.featured : ''}`}
+                      className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
                       onClick={() => logClick(link.id, link.title, section.id, meta)}
                     >
-                      <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''}`}>
-                        {link.icon}
-                      </div>
-                      <div className={styles.cardText}>
-                        <div className={styles.cardTitle}>{link.title}</div>
-                        <div className={styles.cardSub}>{link.subtitle}</div>
-                      </div>
-                      {badge && (
-                        <span className={`${styles.badge} ${styles[badge.cls]}`}>
-                          {badge.label}
-                        </span>
+                      {link.thumbnail && (
+                        <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
                       )}
-                      <Arrow />
+                      <div className={styles.cardRow}>
+                        <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
+                          {link.iconImage
+                            ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                            : link.icon}
+                        </div>
+                        <div className={styles.cardText}>
+                          <div className={styles.cardTitle}>{link.title}</div>
+                          <div className={styles.cardSub}>{link.subtitle}</div>
+                        </div>
+                        {badge && (
+                          <span className={`${styles.badge} ${styles[badge.cls]}`}>
+                            {badge.label}
+                          </span>
+                        )}
+                        <Arrow />
+                      </div>
                     </a>
                   )
                 })}
@@ -409,7 +416,6 @@ function ProductsSection({ products, logClick, styles }) {
   const [expanded, setExpanded] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0)
   const sliderRef = useRef(null)
-
   const visibleProducts = products?.items?.filter(p => p.visible) || []
   if (!visibleProducts.length) return null
 
@@ -428,6 +434,13 @@ function ProductsSection({ products, logClick, styles }) {
     setActiveSlide(Math.round(el.scrollLeft / (cardWidth + 12)))
   }
 
+  const slideBy = (dir) => {
+    const el = sliderRef.current
+    if (!el) return
+    const cardWidth = el.firstChild?.offsetWidth || 220
+    el.scrollBy({ left: dir * (cardWidth + 12), behavior: 'smooth' })
+  }
+
   return (
     <div className={styles.productsSection}>
       <div className={styles.sectionLabel}>
@@ -437,36 +450,48 @@ function ProductsSection({ products, logClick, styles }) {
 
       {isSlider ? (
         <>
-          <div
-            className={styles.productsSlider}
-            ref={sliderRef}
-            onScroll={handleSliderScroll}
-          >
-            {visibleProducts.map(product => (
-              <a
-                key={product.id}
-                href={product.url}
-                target="_blank"
-                rel="noopener"
-                className={`${styles.productSliderCard} ${product.featured ? styles.featuredProduct : ''}`}
-                onClick={() => logClick(product.id, product.name, 'products', meta)}
-              >
-                <div className={styles.productThumbGrid}>
-                  {product.thumbnailUrl
-                    ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
-                    : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
-                  }
-                </div>
-                <div className={styles.productInfoGrid}>
-                  <div className={styles.productNameGrid}>{product.name}</div>
-                  <div className={styles.productDescGrid}>{product.description}</div>
-                  <div className={styles.productMetaGrid}>
-                    <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
-                    <span className={styles.productBtn}>Get it →</span>
+          <div className={styles.sliderWrapper}>
+            {activeSlide > 0 && (
+              <button className={`${styles.sliderArrow} ${styles.sliderArrowLeft}`} onClick={() => slideBy(-1)} aria-label="Previous">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            )}
+            <div
+              className={styles.productsSlider}
+              ref={sliderRef}
+              onScroll={handleSliderScroll}
+            >
+              {visibleProducts.map(product => (
+                <a
+                  key={product.id}
+                  href={product.url}
+                  target="_blank"
+                  rel="noopener"
+                  className={`${styles.productSliderCard} ${product.featured ? styles.featuredProduct : ''}`}
+                  onClick={() => logClick(product.id, product.name, 'products', meta)}
+                >
+                  <div className={styles.productThumbGrid}>
+                    {product.thumbnailUrl
+                      ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                      : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                    }
                   </div>
-                </div>
-              </a>
-            ))}
+                  <div className={styles.productInfoGrid}>
+                    <div className={styles.productNameGrid}>{product.name}</div>
+                    <div className={styles.productDescGrid}>{product.description}</div>
+                    <div className={styles.productMetaGrid}>
+                      <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
+                      <span className={styles.productBtn}>Get it →</span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            {activeSlide < visibleProducts.length - 1 && (
+              <button className={`${styles.sliderArrow} ${styles.sliderArrowRight}`} onClick={() => slideBy(1)} aria-label="Next">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )}
           </div>
           {visibleProducts.length > 1 && (
             <div className={styles.sliderDots}>
