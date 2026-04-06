@@ -715,8 +715,9 @@ function ProductsTab({ onSaved }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--muted)', width: 80 }}>Layout</span>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button style={optionBtn(layout === 'rows')} onClick={() => setLayout('rows')}>≡ Rows</button>
-            <button style={optionBtn(layout === 'grid')} onClick={() => setLayout('grid')}>⊞ Grid</button>
+            <button style={optionBtn(layout === 'rows')}   onClick={() => setLayout('rows')}>≡ Rows</button>
+            <button style={optionBtn(layout === 'grid')}   onClick={() => setLayout('grid')}>⊞ Grid</button>
+            <button style={optionBtn(layout === 'slider')} onClick={() => setLayout('slider')}>◀▶ Slider</button>
           </div>
         </div>
 

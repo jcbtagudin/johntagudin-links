@@ -452,6 +452,58 @@
 
 .productCard:hover .productBtn { color: var(--text2); }
 
+/* ── Slider layout ── */
+.productsSlider {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.productsSlider::-webkit-scrollbar { display: none; }
+
+.productSliderCard {
+  flex-shrink: 0;
+  width: 160px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  color: var(--text);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.productSliderCard:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.sliderDots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+.sliderDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border2);
+  transition: all 0.2s ease;
+}
+.sliderDotActive {
+  width: 16px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
 .productsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
@@ -371,20 +371,76 @@ const COLLAPSE_THRESHOLD = 3
 
 function ProductsSection({ products, logClick, styles }) {
   const [expanded, setExpanded] = useState(false)
+  const [activeSlide, setActiveSlide] = useState(0)
+  const sliderRef = useRef(null)
+
   const visibleProducts = products?.items?.filter(p => p.visible) || []
   if (!visibleProducts.length) return null
 
-  const isGrid = products?.layout === 'grid'
+  const layout = products?.layout || 'rows'
+  const isGrid   = layout === 'grid'
+  const isSlider = layout === 'slider'
   const sectionTitle = products?.title || 'My Products'
   const getPriceClass = (price) => /\d/.test(price) ? styles.productPriceWhite : styles.productPrice
   const hasMore = visibleProducts.length > COLLAPSE_THRESHOLD
   const shown = hasMore && !expanded ? visibleProducts.slice(0, COLLAPSE_THRESHOLD) : visibleProducts
 
+  const handleSliderScroll = () => {
+    const el = sliderRef.current
+    if (!el) return
+    const cardWidth = el.firstChild?.offsetWidth || 1
+    setActiveSlide(Math.round(el.scrollLeft / (cardWidth + 12)))
+  }
+
   return (
     <div className={styles.productsSection}>
       <div className={styles.sectionLabel}>🛍️ {sectionTitle}</div>
 
-      {isGrid ? (
+      {isSlider ? (
+        <>
+          <div
+            className={styles.productsSlider}
+            ref={sliderRef}
+            onScroll={handleSliderScroll}
+          >
+            {visibleProducts.map(product => (
+              <a
+                key={product.id}
+                href={product.url}
+                target="_blank"
+                rel="noopener"
+                className={`${styles.productSliderCard} ${product.featured ? styles.featuredProduct : ''}`}
+                onClick={() => logClick(product.id, product.name, 'products', meta)}
+              >
+                <div className={styles.productThumbGrid}>
+                  {product.thumbnailUrl
+                    ? <img src={product.thumbnailUrl} alt={product.name} onError={e => e.target.style.display = 'none'} />
+                    : <span className={styles.productThumbFallback}>{product.name?.[0] || '🛍'}</span>
+                  }
+                </div>
+                <div className={styles.productInfoGrid}>
+                  <div className={styles.productNameGrid}>{product.name}</div>
+                  <div className={styles.productDescGrid}>{product.description}</div>
+                  <div className={styles.productMetaGrid}>
+                    <span className={getPriceClass(product.price)}>{product.price || 'Free'}</span>
+                    <span className={styles.productBtn}>Get it →</span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+          {visibleProducts.length > 1 && (
+            <div className={styles.sliderDots}>
+              {visibleProducts.map((_, i) => (
+                <div
+                  key={i}
+                  className={`${styles.sliderDot} ${i === activeSlide ? styles.sliderDotActive : ''}`}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      ) : isGrid ? (
         <div className={styles.productsGrid}>
           {shown.map(product => (
             <a
@@ -442,7 +498,7 @@ function ProductsSection({ products, logClick, styles }) {
         </div>
       )}
 
-      {hasMore && (
+      {!isSlider && hasMore && (
         <button className={styles.showMoreBtn} onClick={() => setExpanded(e => !e)}>
           {expanded
             ? 'Show less ▲'
