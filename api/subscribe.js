@@ -104,7 +104,7 @@ export default async function handler(req, res) {
         from: fromAddress,
         to: [cleanEmail],
         subject: 'you made a good call 👋',
-        template_id: 'welcome-email',
+        template_id: 'c3b3d8e9-a07a-4354-bdb9-38e2a44521ed',
       })
       if (emailError) console.error('[subscribe] Resend email error:', emailError)
     } catch (err) { console.error('[subscribe] Resend email exception:', err) }
