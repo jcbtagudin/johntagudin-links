@@ -987,17 +987,22 @@
 }
 
 .cardWithThumb {
+  flex-direction: column;
   padding: 0;
+  gap: 0;
   overflow: hidden;
-  position: relative;
+}
+
+.cardWithThumb .cardRow {
+  padding: 12px 16px;
 }
 
 .cardThumb {
   width: 100%;
-  height: 200px;
+  height: 180px;
   object-fit: cover;
   display: block;
-  border-radius: 14px;
+  border-radius: 14px 14px 0 0;
 }
 
 .cardText { flex: 1; min-width: 0; }

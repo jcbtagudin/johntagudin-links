@@ -225,6 +225,9 @@ export default function PublicPage() {
                       className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
                       onClick={() => logClick(link.id, link.title, section.id, meta)}
                     >
+                      {link.thumbnail && (
+                        <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
+                      )}
                       <div className={styles.cardRow}>
                         <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
                           {link.iconImage
