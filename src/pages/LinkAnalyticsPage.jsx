@@ -1,5 +1,5 @@
 import React from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useLinkAnalytics, useProfile } from '../hooks/useData'
 
 const flagEmoji = (code) => {
@@ -20,10 +20,11 @@ const aggregate = (arr, key) => {
 
 export default function LinkAnalyticsPage() {
   const { linkId } = useParams()
+  const [searchParams] = useSearchParams()
   const { clicks, loading } = useLinkAnalytics(linkId)
   const { profile } = useProfile()
 
-  const linkTitle = clicks[0]?.linkTitle || 'Link'
+  const linkTitle = searchParams.get('title') || clicks[0]?.linkTitle || linkId
 
   const bySource  = aggregate(clicks, 'source')
   const byDevice  = aggregate(clicks, 'device')

@@ -1900,7 +1900,7 @@ function LinkDetailPanel({ linkId, title, allClicks, days, range, onBack }) {
   })
   const byCountry = Object.entries(byCountryRaw).sort((a, b) => b[1].count - a[1].count).slice(0, 10)
 
-  const shareUrl = `${window.location.origin}/analytics/${linkId}`
+  const shareUrl = `${window.location.origin}/analytics/${linkId}?title=${encodeURIComponent(title)}`
   const copyShare = () => {
     navigator.clipboard.writeText(shareUrl).then(() => {
       setCopied(true)
