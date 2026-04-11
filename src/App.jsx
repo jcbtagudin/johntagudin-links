@@ -4,6 +4,8 @@ import { useAuth } from './hooks/useAuth'
 import PublicPage from './pages/PublicPage'
 import LoginPage from './pages/LoginPage'
 import AdminPage from './pages/AdminPage'
+import LinkAnalyticsPage from './pages/LinkAnalyticsPage'
+import LinkRedirectPage from './pages/LinkRedirectPage'
 
 function ProtectedRoute({ children }) {
   const { user, isAdmin, loading } = useAuth()
@@ -19,6 +21,8 @@ export default function App() {
       <Route path="/" element={<PublicPage />} />
       <Route path="/admin/login" element={<LoginPage />} />
       <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+      <Route path="/analytics/:linkId" element={<LinkAnalyticsPage />} />
+      <Route path="/l/:linkId" element={<LinkRedirectPage />} />
     </Routes>
   )
 }

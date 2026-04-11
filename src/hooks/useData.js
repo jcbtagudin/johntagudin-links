@@ -243,6 +243,35 @@ export function useAnalytics() {
   return { clicks, pageViews, loading }
 }
 
+export function useLinkAnalytics(linkId) {
+  const [clicks, setClicks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!linkId) { setLoading(false); return }
+    // No orderBy — avoids requiring a composite index.
+    // Sort in memory after fetching.
+    const q = query(
+      collection(db, 'clicks'),
+      where('linkId', '==', linkId),
+      limit(5000)
+    )
+    const unsub = onSnapshot(q, snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      data.sort((a, b) => {
+        const ta = a.timestamp?.toMillis?.() ?? 0
+        const tb = b.timestamp?.toMillis?.() ?? 0
+        return tb - ta
+      })
+      setClicks(data)
+      setLoading(false)
+    }, () => setLoading(false))
+    return unsub
+  }, [linkId])
+
+  return { clicks, loading }
+}
+
 // ─── REVIEWS ──────────────────────────────────────────────────────────────────
 
 // Public: approved reviews only, pinned first, newest first, max 20

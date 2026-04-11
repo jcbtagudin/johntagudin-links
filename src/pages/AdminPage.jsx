@@ -732,6 +732,15 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [showSchedule, setShowSchedule] = useState(!!(link.startDate || link.endDate))
   const { requestConfirm, ConfirmModal } = useConfirm()
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  const copyRedirectUrl = () => {
+    const url = `${window.location.origin}/l/${link.id}`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
+    })
+  }
 
   return (
     <div ref={setNodeRef} style={{ ...s.linkRow, ...style }}>
@@ -838,7 +847,20 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
         )}
 
       </div>
-      <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={() => requestConfirm('Delete this link?', onRemove)}>✕</button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+        <button
+          title={`Copy redirect URL: /l/${link.id}`}
+          onClick={copyRedirectUrl}
+          style={{
+            ...s.iconBtn, fontSize: 12, padding: '4px 8px', borderRadius: 6,
+            border: '1px solid var(--border)',
+            background: copiedLink ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
+            color: copiedLink ? 'var(--accent)' : 'var(--muted)',
+            fontWeight: copiedLink ? 600 : 400, whiteSpace: 'nowrap',
+          }}
+        >{copiedLink ? '✓' : '🔗'}</button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => requestConfirm('Delete this link?', onRemove)}>✕</button>
+      </div>
       {ConfirmModal}
     </div>
   )
@@ -1287,6 +1309,22 @@ function SubscribersTab() {
 
   if (loading) return <Loader />
 
+  // Growth chart data — last 30 days
+  const last30 = {}
+  for (let i = 29; i >= 0; i--) {
+    const key = new Date(Date.now() - i * 86400000).toISOString().split('T')[0]
+    last30[key] = 0
+  }
+  subscribers.forEach(s => {
+    const d = s.subscribedAt?.toDate ? s.subscribedAt.toDate() : (s.subscribedAt ? new Date(s.subscribedAt) : null)
+    if (!d) return
+    const key = d.toISOString().split('T')[0]
+    if (key in last30) last30[key]++
+  })
+  const growthData = Object.entries(last30).map(([date, count]) => ({ date, count }))
+  const newThisWeek  = growthData.slice(-7).reduce((sum, d) => sum + d.count, 0)
+  const newThisMonth = growthData.reduce((sum, d) => sum + d.count, 0)
+
   const filtered = search.trim()
     ? subscribers.filter(s => s.email?.toLowerCase().includes(search.trim().toLowerCase()))
     : subscribers
@@ -1312,19 +1350,36 @@ function SubscribersTab() {
   return (
     <div style={{ ...s.tabBody, maxWidth: 680 }}>
 
-      {/* Big total count */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 16, padding: '28px 32px',
-        display: 'flex', alignItems: 'baseline', gap: 10,
-      }}>
-        <div style={{
-          fontFamily: "'SF Pro Display', -apple-system, sans-serif",
-          fontSize: 60, fontWeight: 800, lineHeight: 1, color: 'var(--text)', letterSpacing: -3,
-        }}>
-          {subscribers.length}
+      {/* Stats + Growth Chart */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        {/* Stats row */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+          {[
+            { label: 'Total',      value: subscribers.length, accent: true },
+            { label: 'This Week',  value: newThisWeek },
+            { label: 'This Month', value: newThisMonth },
+          ].map((stat, i, arr) => (
+            <div key={stat.label} style={{ flex: 1, padding: '20px 24px', borderRight: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8, fontWeight: 500, letterSpacing: 0.2 }}>{stat.label}</div>
+              <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1, fontFamily: "'SF Pro Display', -apple-system, sans-serif", color: stat.accent ? 'var(--accent)' : 'var(--text)' }}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--muted)', letterSpacing: 0.2 }}>subscribers</div>
+        {/* Growth chart */}
+        <div style={{ padding: '16px 24px 8px' }}>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4, fontWeight: 500 }}>
+            NEW SUBSCRIBERS — LAST 30 DAYS
+          </div>
+          {growthData.some(d => d.count > 0) ? (
+            <AreaChart data={growthData} />
+          ) : (
+            <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13 }}>
+              No new subscribers in the last 30 days.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Search + Export */}
@@ -1390,6 +1445,7 @@ function SubscribersTab() {
 function AnalyticsTab() {
   const { clicks, pageViews, loading } = useAnalytics()
   const [range, setRange] = useState('30')
+  const [selectedLink, setSelectedLink] = useState(null) // { linkId, title }
 
   const days = range === 'all' ? 60 : parseInt(range)
 
@@ -1443,6 +1499,25 @@ function AnalyticsTab() {
   const byBrowser = aggregate(filtered, 'browser')
   const byOS      = aggregate(filtered, 'os')
 
+  // Day of week
+  const DOW_ORDER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const byDayOfWeek = Object.fromEntries(DOW_ORDER.map(d => [d, 0]))
+  filtered.forEach(c => {
+    if (!c.timestamp) return
+    const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
+    byDayOfWeek[DOW_ORDER[d.getDay()]]++
+  })
+  const dowMax = Math.max(...Object.values(byDayOfWeek), 1)
+
+  // Hour of day
+  const byHour = Array(24).fill(0)
+  filtered.forEach(c => {
+    if (!c.timestamp) return
+    const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
+    byHour[d.getHours()]++
+  })
+  const hourMax = Math.max(...byHour, 1)
+
   const byCountryRaw = {}
   filtered.forEach(c => {
     if (!c.country || c.country === 'unknown') return
@@ -1472,6 +1547,19 @@ function AnalyticsTab() {
   const rangeLabel = range === 'all' ? 'All time' : `${fmt(startDate)} — ${fmt(endDate)}`
 
   if (loading) return <div style={{ color: 'var(--muted)', padding: '32px 0', fontSize: 13 }}>Loading analytics...</div>
+
+  if (selectedLink) {
+    return (
+      <LinkDetailPanel
+        linkId={selectedLink.linkId}
+        title={selectedLink.title}
+        allClicks={filtered}
+        days={days}
+        range={range}
+        onBack={() => setSelectedLink(null)}
+      />
+    )
+  }
 
   return (
     <div style={{ maxWidth: 820 }}>
@@ -1550,7 +1638,10 @@ function AnalyticsTab() {
         <div style={{ borderTop: '1px solid var(--border)', marginTop: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px 10px' }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Top Links</span>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>CTR</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            </div>
           </div>
 
           {sorted.length === 0 ? (
@@ -1558,33 +1649,44 @@ function AnalyticsTab() {
               No clicks recorded in this period.
             </div>
           ) : (
-            sorted.slice(0, 8).map(([linkId, { title, count }], i) => (
-              <div key={linkId} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 24px',
-                borderTop: '1px solid var(--border)',
-                background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-              }}>
+            sorted.slice(0, 10).map(([linkId, { title, count }], i) => (
+              <div
+                key={linkId}
+                onClick={() => setSelectedLink({ linkId, title })}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 24px',
+                  borderTop: '1px solid var(--border)',
+                  background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                  cursor: 'pointer', transition: 'background 0.12s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(74,124,64,0.05)'}
+                onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)'}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-                    background: i === 0 ? 'rgba(232,255,87,0.12)' : 'var(--surface2)',
-                    border: `1px solid ${i === 0 ? 'rgba(232,255,87,0.25)' : 'var(--border)'}`,
+                    background: i === 0 ? 'rgba(74,124,64,0.12)' : 'var(--surface2)',
+                    border: `1px solid ${i === 0 ? 'rgba(74,124,64,0.25)' : 'var(--border)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11, fontWeight: 700,
                     color: i === 0 ? 'var(--accent)' : 'var(--muted)',
                   }}>#{i + 1}</div>
                   <span style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, marginLeft: 16 }}>
-                  <div style={{ width: 72, height: 4, background: 'var(--surface2)', borderRadius: 99 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 16 }}>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', minWidth: 38, textAlign: 'right' }}>
+                    {filteredPV.length > 0 ? `${((count / filteredPV.length) * 100).toFixed(1)}%` : '—'}
+                  </span>
+                  <div style={{ width: 60, height: 4, background: 'var(--surface2)', borderRadius: 99 }}>
                     <div style={{
                       height: '100%', borderRadius: 99,
                       width: `${(count / (sorted[0]?.[1].count || 1)) * 100}%`,
-                      background: i === 0 ? 'var(--accent)' : 'rgba(232,255,87,0.35)',
+                      background: i === 0 ? 'var(--accent)' : 'rgba(74,124,64,0.35)',
                     }} />
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>→</span>
                 </div>
               </div>
             ))
@@ -1696,10 +1798,335 @@ function AnalyticsTab() {
                 )
               })}
             </div>
+
+            {/* OS */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Operating Systems</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+              </div>
+              {byOS.map(([os, count], i) => {
+                const icon = os.toLowerCase().includes('ios') ? '🍎' : os.toLowerCase().includes('android') ? '🤖' : os.toLowerCase().includes('windows') ? '🪟' : os.toLowerCase().includes('mac') ? '🍎' : os.toLowerCase().includes('linux') ? '🐧' : '💻'
+                const pct = filtered.length > 0 ? `${((count / filtered.length) * 100).toFixed(1)}%` : '—'
+                return (
+                  <div key={os} style={rowStyle(i)}>
+                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', width: 110, flexShrink: 0, textTransform: 'capitalize' }}>{os}</span>
+                    {bar(count, byOS[0]?.[1] || 1)}
+                    <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 40, textAlign: 'right' }}>{pct}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Day of Week + Hour of Day */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>When People Click</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>By day & hour</span>
+              </div>
+              <div style={{ padding: '16px 24px' }}>
+                {/* Day of week bars */}
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', letterSpacing: 0.4, marginBottom: 10 }}>DAY OF WEEK</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+                  {DOW_ORDER.map(day => (
+                    <div key={day} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text2)', width: 30, flexShrink: 0 }}>{day}</span>
+                      <div style={{ flex: 1, height: 6, background: 'var(--surface2)', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 99, background: 'var(--accent)', transition: 'width 0.4s ease', width: `${(byDayOfWeek[day] / dowMax) * 100}%` }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', minWidth: 24, textAlign: 'right' }}>{byDayOfWeek[day]}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Hour heatmap */}
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', letterSpacing: 0.4, marginBottom: 10 }}>HOUR OF DAY</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3 }}>
+                  {byHour.slice(0, 12).map((count, h) => (
+                    <div key={h} title={`${h}:00 — ${count} clicks`} style={{
+                      height: 34, borderRadius: 5, cursor: 'default',
+                      background: `rgba(74,124,64,${hourMax > 0 ? 0.07 + (count / hourMax) * 0.75 : 0.07})`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                    }}>
+                      <span style={{ fontSize: 9, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>{h}</span>
+                      {count > 0 && <span style={{ fontSize: 8, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)' }}>{count}</span>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginTop: 3 }}>
+                  {byHour.slice(12, 24).map((count, h) => (
+                    <div key={h + 12} title={`${h + 12}:00 — ${count} clicks`} style={{
+                      height: 34, borderRadius: 5, cursor: 'default',
+                      background: `rgba(74,124,64,${hourMax > 0 ? 0.07 + (count / hourMax) * 0.75 : 0.07})`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                    }}>
+                      <span style={{ fontSize: 9, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>{h + 12}</span>
+                      {count > 0 && <span style={{ fontSize: 8, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)' }}>{count}</span>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)', marginTop: 6 }}>
+                  <span>12 AM</span><span>12 PM</span><span>11 PM</span>
+                </div>
+              </div>
+            </div>
           </>
         )
       })()}
 
+    </div>
+  )
+}
+
+// ─── LINK DETAIL PANEL ───────────────────────────────────────────────────────
+function LinkDetailPanel({ linkId, title, allClicks, days, range, onBack }) {
+  const [copied, setCopied] = useState(false)
+
+  const linkClicks = allClicks.filter(c => c.linkId === linkId)
+
+  // Build chart data
+  const byDay = {}
+  for (let i = days - 1; i >= 0; i--) {
+    const key = new Date(Date.now() - i * 86400000).toISOString().split('T')[0]
+    byDay[key] = 0
+  }
+  linkClicks.forEach(c => {
+    if (!c.timestamp) return
+    const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
+    const key = d.toISOString().split('T')[0]
+    if (key in byDay) byDay[key]++
+  })
+  const chartData = Object.entries(byDay).map(([date, count]) => ({ date, count }))
+
+  const today = new Date().toISOString().split('T')[0]
+  const clicksToday = byDay[today] || 0
+  const peakDay = Math.max(...Object.values(byDay), 0)
+  const avgPerDay = days > 0 ? (linkClicks.length / days).toFixed(1) : '0'
+
+  const aggregate = (arr, key) => {
+    const map = {}
+    arr.forEach(c => { const v = c[key] || 'unknown'; map[v] = (map[v] || 0) + 1 })
+    return Object.entries(map).sort((a, b) => b[1] - a[1])
+  }
+  const bySource  = aggregate(linkClicks, 'source')
+  const byDevice  = aggregate(linkClicks, 'device')
+  const byBrowser = aggregate(linkClicks, 'browser')
+  const byOS      = aggregate(linkClicks, 'os')
+
+  const byCountryRaw = {}
+  linkClicks.forEach(c => {
+    if (!c.country || c.country === 'unknown') return
+    if (!byCountryRaw[c.country]) byCountryRaw[c.country] = { count: 0, code: c.countryCode || '' }
+    byCountryRaw[c.country].count++
+  })
+  const byCountry = Object.entries(byCountryRaw).sort((a, b) => b[1].count - a[1].count).slice(0, 10)
+
+  const shareUrl = `${window.location.origin}/analytics/${linkId}?title=${encodeURIComponent(title)}`
+  const copyShare = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  const flagEmoji = (code) => {
+    if (!code || code.length !== 2) return '🌐'
+    return String.fromCodePoint(...code.toUpperCase().split('').map(c => 0x1F1E0 + c.charCodeAt(0) - 65))
+  }
+  const SOURCE_ICONS = {
+    tiktok: '🎵', facebook: '📘', instagram: '📸', youtube: '▶️',
+    twitter: '𝕏', threads: '🧵', linkedin: '💼', email: '📧', direct: '🔗', unknown: '🔗',
+  }
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const startDate = new Date(Date.now() - (days - 1) * 86400000)
+  const endDate = new Date()
+
+  const cardStyle = {
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 16, overflow: 'hidden', marginTop: 16,
+  }
+  const headerStyle = {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '14px 24px 10px', borderBottom: '1px solid var(--border)',
+  }
+  const rowStyle = (i) => ({
+    display: 'flex', alignItems: 'center', gap: 12,
+    padding: '10px 24px',
+    borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+  })
+  const bar = (count, max) => (
+    <div style={{ flex: 1, height: 4, background: 'var(--surface2)', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{ height: '100%', borderRadius: 99, background: 'var(--accent)', transition: 'width 0.4s ease', width: `${max > 0 ? (count / max) * 100 : 0}%` }} />
+    </div>
+  )
+
+  return (
+    <div style={{ maxWidth: 820 }}>
+
+      {/* Back + title + share */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
+        <button onClick={onBack} style={{ ...s.iconBtn, border: '1px solid var(--border)', borderRadius: 8, padding: '7px 12px', fontSize: 13, color: 'var(--text2)', background: 'var(--surface2)', flexShrink: 0 }}>← Back</button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', fontFamily: "'SF Pro Display', -apple-system, sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Link Analytics · {range === 'all' ? 'All time' : `Last ${days} days`}</div>
+        </div>
+        <button
+          onClick={copyShare}
+          style={{
+            ...s.iconBtn, border: '1px solid var(--border)', borderRadius: 8,
+            padding: '7px 14px', fontSize: 12, flexShrink: 0,
+            background: copied ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
+            color: copied ? 'var(--accent)' : 'var(--text2)', fontWeight: copied ? 600 : 400,
+          }}
+        >{copied ? '✓ Copied!' : '🔗 Share'}</button>
+      </div>
+
+      {/* Shareable URL bar */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+        <span style={{ fontSize: 12, color: 'var(--muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shareUrl}</span>
+        <button onClick={copyShare} style={{
+          padding: '6px 14px', background: copied ? 'var(--accent)' : 'var(--surface2)',
+          border: '1px solid var(--border)', borderRadius: 8,
+          color: copied ? '#fff' : 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
+        }}>{copied ? '✓ Copied!' : 'Copy Link'}</button>
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 16, paddingLeft: 4 }}>Share this URL with brands to show them analytics for this specific link.</div>
+
+      {/* Stats */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+          {[
+            { label: 'Total Clicks', value: linkClicks.length, accent: true },
+            { label: 'Today',        value: clicksToday },
+            { label: 'Peak Day',     value: peakDay },
+            { label: 'Avg / Day',    value: avgPerDay },
+          ].map((stat, i, arr) => (
+            <div key={stat.label} style={{ flex: 1, minWidth: 100, padding: '20px 22px', borderRight: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8, fontWeight: 500, letterSpacing: 0.2 }}>{stat.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1, fontFamily: "'SF Pro Display', -apple-system, sans-serif", color: stat.accent ? 'var(--accent)' : 'var(--text)' }}>{stat.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chart */}
+        <div style={{ padding: '20px 24px 0' }}>
+          {chartData.some(d => d.count > 0) ? (
+            <>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{Math.max(...chartData.map(d => d.count))}</div>
+              <AreaChart data={chartData} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', paddingBottom: 4, marginTop: 2 }}>
+                <span>{fmt(startDate)}</span><span>{fmt(endDate)}</span>
+              </div>
+            </>
+          ) : (
+            <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13 }}>
+              No clicks for this link in this period.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {linkClicks.length === 0 ? (
+        <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No data for this link in the selected period.</div>
+      ) : (
+        <>
+          {/* Traffic Sources */}
+          <div style={cardStyle}>
+            <div style={headerStyle}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Traffic Sources</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            </div>
+            {bySource.map(([src, count], i) => (
+              <div key={src} style={rowStyle(i)}>
+                <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{SOURCE_ICONS[src] || '🔗'}</span>
+                <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{src}</span>
+                {bar(count, bySource[0]?.[1] || 1)}
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Devices */}
+          <div style={cardStyle}>
+            <div style={headerStyle}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Devices</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            </div>
+            {byDevice.map(([device, count], i) => {
+              const icon = device === 'mobile' ? '📱' : device === 'desktop' ? '🖥' : device === 'tablet' ? '📟' : '❓'
+              const pct = linkClicks.length > 0 ? `${((count / linkClicks.length) * 100).toFixed(1)}%` : '—'
+              return (
+                <div key={device} style={rowStyle(i)}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{device}</span>
+                  {bar(count, byDevice[0]?.[1] || 1)}
+                  <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 40, textAlign: 'right' }}>{pct}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Countries */}
+          {byCountry.length > 0 && (
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Top Countries</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+              </div>
+              {byCountry.map(([country, { count, code }], i) => (
+                <div key={country} style={rowStyle(i)}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{flagEmoji(code)}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text)', width: 130, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{country}</span>
+                  {bar(count, byCountry[0]?.[1]?.count || 1)}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Browsers */}
+          <div style={cardStyle}>
+            <div style={headerStyle}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Browsers</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            </div>
+            {byBrowser.map(([browser, count], i) => {
+              const icon = browser === 'chrome' ? '🟡' : browser === 'safari' ? '🔵' : browser === 'firefox' ? '🟠' : browser === 'edge' ? '🟦' : '🌐'
+              return (
+                <div key={browser} style={rowStyle(i)}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{browser}</span>
+                  {bar(count, byBrowser[0]?.[1] || 1)}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* OS */}
+          <div style={cardStyle}>
+            <div style={headerStyle}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Operating Systems</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            </div>
+            {byOS.map(([os, count], i) => {
+              const icon = os.toLowerCase().includes('ios') ? '🍎' : os.toLowerCase().includes('android') ? '🤖' : os.toLowerCase().includes('windows') ? '🪟' : os.toLowerCase().includes('mac') ? '🍎' : os.toLowerCase().includes('linux') ? '🐧' : '💻'
+              const pct = linkClicks.length > 0 ? `${((count / linkClicks.length) * 100).toFixed(1)}%` : '—'
+              return (
+                <div key={os} style={rowStyle(i)}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text)', width: 110, flexShrink: 0, textTransform: 'capitalize' }}>{os}</span>
+                  {bar(count, byOS[0]?.[1] || 1)}
+                  <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 40, textAlign: 'right' }}>{pct}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }
