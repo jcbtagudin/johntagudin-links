@@ -249,14 +249,21 @@ export function useLinkAnalytics(linkId) {
 
   useEffect(() => {
     if (!linkId) { setLoading(false); return }
+    // No orderBy — avoids requiring a composite index.
+    // Sort in memory after fetching.
     const q = query(
       collection(db, 'clicks'),
       where('linkId', '==', linkId),
-      orderBy('timestamp', 'desc'),
       limit(5000)
     )
     const unsub = onSnapshot(q, snap => {
-      setClicks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      data.sort((a, b) => {
+        const ta = a.timestamp?.toMillis?.() ?? 0
+        const tb = b.timestamp?.toMillis?.() ?? 0
+        return tb - ta
+      })
+      setClicks(data)
       setLoading(false)
     }, () => setLoading(false))
     return unsub
