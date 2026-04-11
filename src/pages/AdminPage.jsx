@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { signOut } from 'firebase/auth'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, storage } from '../lib/firebase'
@@ -48,6 +48,14 @@ export default function AdminPage() {
   const { data: linksData, save: saveLinks } = useLinks()
   const [tab, setTab] = useState('profile')
   const [saved, setSaved] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const showSaved = () => {
     setSaved(true)
@@ -75,28 +83,60 @@ export default function AdminPage() {
     analytics: 'Click Analytics',
   }
 
+  const NAV_ITEMS = [
+    { id: 'profile',     label: '👤 Profile' },
+    { id: 'socials',     label: '📲 Socials' },
+    { id: 'links',       label: '🔗 Links' },
+    { id: 'products',    label: '🛍️ Products' },
+    { id: 'pinned',      label: '📌 Pinned' },
+    { id: 'subscribers', label: '👥 Subscribers' },
+    { id: 'email',       label: '✉️ Email' },
+    { id: 'analytics',   label: '📊 Analytics' },
+    { id: 'reviews',     label: '⭐ Reviews' },
+  ]
+
+  const TAB_TITLES = {
+    profile: 'Profile Settings', socials: 'Social Links', links: 'Link Sections',
+    products: 'Gumroad Products', pinned: 'Pinned Link', subscribers: 'Subscribers',
+    email: 'Welcome Email', analytics: 'Click Analytics', reviews: 'Reviews',
+  }
+
   return (
     <div style={s.page}>
+      {/* MOBILE BACKDROP */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            zIndex: 98, backdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside style={s.sidebar}>
+      <aside style={{
+        ...s.sidebar,
+        ...(isMobile ? {
+          position: 'fixed', top: 0, left: sidebarOpen ? 0 : -260,
+          zIndex: 99, width: 240,
+          transition: 'left 0.25s cubic-bezier(0.4,0,0.2,1)',
+          boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
+        } : {}),
+      }}>
         <div style={s.sideTop}>
-          <div style={s.logo}>⚙ Admin</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={s.logo}>⚙ Admin</div>
+            {isMobile && (
+              <button onClick={() => setSidebarOpen(false)} style={s.closeBtn}>✕</button>
+            )}
+          </div>
           <nav style={s.nav}>
-            {[
-              { id: 'profile',   label: '👤 Profile' },
-              { id: 'socials',   label: '📲 Socials' },
-              { id: 'links',     label: '🔗 Links' },
-              { id: 'products',  label: '🛍️ Products' },
-              { id: 'pinned',       label: '📌 Pinned' },
-              { id: 'subscribers',  label: '👥 Subscribers' },
-              { id: 'email',        label: '✉️ Email' },
-              { id: 'analytics',    label: '📊 Analytics' },
-              { id: 'reviews',      label: '⭐ Reviews' },
-            ].map(item => (
+            {NAV_ITEMS.map(item => (
               <button
                 key={item.id}
                 style={{ ...s.navBtn, ...(tab === item.id ? s.navActive : {}) }}
-                onClick={() => setTab(item.id)}
+                onClick={() => { setTab(item.id); if (isMobile) setSidebarOpen(false) }}
               >
                 {item.label}
               </button>
@@ -116,50 +156,34 @@ export default function AdminPage() {
       </aside>
 
       {/* MAIN */}
-      <main style={s.main}>
-        <div style={s.header}>
-          <div style={s.headerTitle}>
-            {tab === 'profile'   && 'Profile Settings'}
-            {tab === 'socials'   && 'Social Links'}
-            {tab === 'links'     && 'Link Sections'}
-            {tab === 'products'  && 'Gumroad Products'}
-            {tab === 'pinned'       && 'Pinned Link'}
-            {tab === 'subscribers'  && 'Subscribers'}
-            {tab === 'email'        && 'Welcome Email'}
-            {tab === 'analytics'    && 'Click Analytics'}
-            {tab === 'reviews'      && 'Reviews'}
+      <main style={{ ...s.main, ...(isMobile ? { paddingTop: 56 } : {}) }}>
+        {/* MOBILE TOP BAR */}
+        {isMobile && (
+          <div style={s.mobileTopBar}>
+            <button onClick={() => setSidebarOpen(v => !v)} style={s.hamburger}>☰</button>
+            <span style={s.mobileTabTitle}>{TAB_TITLES[tab]}</span>
+            {saved && <div style={{ ...s.savedBadge, fontSize: 11, padding: '4px 10px' }}>✓ Saved</div>}
           </div>
-          {saved && <div style={s.savedBadge}>✓ Saved</div>}
-        </div>
+        )}
 
-        <div style={s.content}>
-          {tab === 'profile' && (
-            <ProfileTab profile={profile} update={updateProfile} onSaved={showSaved} />
-          )}
-          {tab === 'socials' && (
-            <SocialsTab data={linksData} save={saveLinks} onSaved={showSaved} />
-          )}
-          {tab === 'links' && (
-            <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />
-          )}
-          {tab === 'products' && (
-            <ProductsTab onSaved={showSaved} />
-          )}
-          {tab === 'pinned' && (
-            <PinnedTab onSaved={showSaved} />
-          )}
-          {tab === 'subscribers' && (
-            <SubscribersTab />
-          )}
-          {tab === 'email' && (
-            <EmailTab onSaved={showSaved} />
-          )}
-          {tab === 'analytics' && (
-            <AnalyticsTab />
-          )}
-          {tab === 'reviews' && (
-            <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />
-          )}
+        {/* DESKTOP HEADER */}
+        {!isMobile && (
+          <div style={s.header}>
+            <div style={s.headerTitle}>{TAB_TITLES[tab]}</div>
+            {saved && <div style={s.savedBadge}>✓ Saved</div>}
+          </div>
+        )}
+
+        <div style={{ ...s.content, ...(isMobile ? { padding: '0 16px 40px' } : {}) }}>
+          {tab === 'profile'     && <ProfileTab profile={profile} update={updateProfile} onSaved={showSaved} />}
+          {tab === 'socials'     && <SocialsTab data={linksData} save={saveLinks} onSaved={showSaved} />}
+          {tab === 'links'       && <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />}
+          {tab === 'products'    && <ProductsTab onSaved={showSaved} />}
+          {tab === 'pinned'      && <PinnedTab onSaved={showSaved} />}
+          {tab === 'subscribers' && <SubscribersTab />}
+          {tab === 'email'       && <EmailTab onSaved={showSaved} />}
+          {tab === 'analytics'   && <AnalyticsTab />}
+          {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
         </div>
       </main>
     </div>
@@ -1915,6 +1939,24 @@ const s = {
     border: '1px solid var(--border)', borderRadius: 8,
     color: 'var(--text2)', fontSize: 12, cursor: 'pointer',
   },
+  closeBtn: {
+    background: 'transparent', border: 'none', fontSize: 16, cursor: 'pointer',
+    color: 'var(--muted)', padding: '4px 8px', borderRadius: 6, lineHeight: 1,
+  },
+  mobileTopBar: {
+    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 90,
+    height: 56, background: 'var(--surface)', borderBottom: '1px solid var(--border)',
+    display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12,
+  },
+  hamburger: {
+    background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer',
+    color: 'var(--text)', padding: '6px 8px', borderRadius: 8, flexShrink: 0, lineHeight: 1,
+  },
+  mobileTabTitle: {
+    flex: 1, fontSize: 16, fontWeight: 700, color: 'var(--text)',
+    fontFamily: "'SF Pro Display', -apple-system, sans-serif",
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
   main: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1939,7 +1981,7 @@ const s = {
   select: {
     background: 'var(--surface2)', border: '1px solid var(--border)',
     borderRadius: 8, padding: '10px 12px', color: 'var(--text)',
-    fontSize: 13, outline: 'none', cursor: 'pointer',
+    fontSize: 13, outline: 'none', cursor: 'pointer', width: '100%',
   },
   saveBtn: {
     marginTop: 8, padding: '12px 24px', background: 'var(--accent)',
@@ -1957,7 +1999,7 @@ const s = {
     background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 10, padding: '10px 12px',
   },
-  rowFields: { display: 'flex', gap: 8, flex: 1 },
+  rowFields: { display: 'flex', gap: 8, flex: 1, flexWrap: 'wrap' },
   rowActions: { display: 'flex', gap: 4 },
   drag: { color: 'var(--muted)', cursor: 'grab', fontSize: 18, userSelect: 'none', flexShrink: 0 },
   iconBtn: { background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14, padding: '4px 6px', borderRadius: 6 },
