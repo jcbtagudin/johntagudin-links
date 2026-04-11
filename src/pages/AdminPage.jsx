@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { signOut } from 'firebase/auth'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, storage } from '../lib/firebase'
@@ -40,6 +40,58 @@ function scheduleStatusStyle(link) {
   }
 }
 
+// ─── CONFIRM DIALOG HOOK ─────────────────────────────────────────────────────
+function useConfirm() {
+  const [dialog, setDialog] = useState(null)
+
+  const requestConfirm = (message, onConfirm) => setDialog({ message, onConfirm })
+  const close = () => setDialog(null)
+
+  const ConfirmModal = dialog ? (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', padding: 20,
+      }}
+      onClick={close}
+    >
+      <div
+        style={{
+          background: 'var(--surface)', borderRadius: 14, padding: '24px 20px',
+          maxWidth: 300, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+          display: 'flex', flexDirection: 'column', gap: 18,
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.5 }}>
+          {dialog.message}
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button
+            onClick={close}
+            style={{
+              padding: '9px 18px', background: 'var(--surface2)',
+              border: '1px solid var(--border)', borderRadius: 8,
+              color: 'var(--text2)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+            }}
+          >Cancel</button>
+          <button
+            onClick={() => { dialog.onConfirm(); close() }}
+            style={{
+              padding: '9px 18px', background: 'var(--red)',
+              border: 'none', borderRadius: 8,
+              color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >Delete</button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
+  return { requestConfirm, ConfirmModal }
+}
+
 // ─── ADMIN PAGE ─────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { user } = useAuth()
@@ -48,6 +100,14 @@ export default function AdminPage() {
   const { data: linksData, save: saveLinks } = useLinks()
   const [tab, setTab] = useState('profile')
   const [saved, setSaved] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const showSaved = () => {
     setSaved(true)
@@ -75,28 +135,60 @@ export default function AdminPage() {
     analytics: 'Click Analytics',
   }
 
+  const NAV_ITEMS = [
+    { id: 'profile',     label: '👤 Profile' },
+    { id: 'socials',     label: '📲 Socials' },
+    { id: 'links',       label: '🔗 Links' },
+    { id: 'products',    label: '🛍️ Products' },
+    { id: 'pinned',      label: '📌 Pinned' },
+    { id: 'subscribers', label: '👥 Subscribers' },
+    { id: 'email',       label: '✉️ Email' },
+    { id: 'analytics',   label: '📊 Analytics' },
+    { id: 'reviews',     label: '⭐ Reviews' },
+  ]
+
+  const TAB_TITLES = {
+    profile: 'Profile Settings', socials: 'Social Links', links: 'Link Sections',
+    products: 'Gumroad Products', pinned: 'Pinned Link', subscribers: 'Subscribers',
+    email: 'Welcome Email', analytics: 'Click Analytics', reviews: 'Reviews',
+  }
+
   return (
     <div style={s.page}>
+      {/* MOBILE BACKDROP */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            zIndex: 98, backdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside style={s.sidebar}>
+      <aside style={{
+        ...s.sidebar,
+        ...(isMobile ? {
+          position: 'fixed', top: 0, left: sidebarOpen ? 0 : -260,
+          zIndex: 99, width: 240,
+          transition: 'left 0.25s cubic-bezier(0.4,0,0.2,1)',
+          boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
+        } : {}),
+      }}>
         <div style={s.sideTop}>
-          <div style={s.logo}>⚙ Admin</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={s.logo}>⚙ Admin</div>
+            {isMobile && (
+              <button onClick={() => setSidebarOpen(false)} style={s.closeBtn}>✕</button>
+            )}
+          </div>
           <nav style={s.nav}>
-            {[
-              { id: 'profile',   label: '👤 Profile' },
-              { id: 'socials',   label: '📲 Socials' },
-              { id: 'links',     label: '🔗 Links' },
-              { id: 'products',  label: '🛍️ Products' },
-              { id: 'pinned',       label: '📌 Pinned' },
-              { id: 'subscribers',  label: '👥 Subscribers' },
-              { id: 'email',        label: '✉️ Email' },
-              { id: 'analytics',    label: '📊 Analytics' },
-              { id: 'reviews',      label: '⭐ Reviews' },
-            ].map(item => (
+            {NAV_ITEMS.map(item => (
               <button
                 key={item.id}
                 style={{ ...s.navBtn, ...(tab === item.id ? s.navActive : {}) }}
-                onClick={() => setTab(item.id)}
+                onClick={() => { setTab(item.id); if (isMobile) setSidebarOpen(false) }}
               >
                 {item.label}
               </button>
@@ -116,50 +208,34 @@ export default function AdminPage() {
       </aside>
 
       {/* MAIN */}
-      <main style={s.main}>
-        <div style={s.header}>
-          <div style={s.headerTitle}>
-            {tab === 'profile'   && 'Profile Settings'}
-            {tab === 'socials'   && 'Social Links'}
-            {tab === 'links'     && 'Link Sections'}
-            {tab === 'products'  && 'Gumroad Products'}
-            {tab === 'pinned'       && 'Pinned Link'}
-            {tab === 'subscribers'  && 'Subscribers'}
-            {tab === 'email'        && 'Welcome Email'}
-            {tab === 'analytics'    && 'Click Analytics'}
-            {tab === 'reviews'      && 'Reviews'}
+      <main style={{ ...s.main, ...(isMobile ? { paddingTop: 56 } : {}) }}>
+        {/* MOBILE TOP BAR */}
+        {isMobile && (
+          <div style={s.mobileTopBar}>
+            <button onClick={() => setSidebarOpen(v => !v)} style={s.hamburger}>☰</button>
+            <span style={s.mobileTabTitle}>{TAB_TITLES[tab]}</span>
+            {saved && <div style={{ ...s.savedBadge, fontSize: 11, padding: '4px 10px' }}>✓ Saved</div>}
           </div>
-          {saved && <div style={s.savedBadge}>✓ Saved</div>}
-        </div>
+        )}
 
-        <div style={s.content}>
-          {tab === 'profile' && (
-            <ProfileTab profile={profile} update={updateProfile} onSaved={showSaved} />
-          )}
-          {tab === 'socials' && (
-            <SocialsTab data={linksData} save={saveLinks} onSaved={showSaved} />
-          )}
-          {tab === 'links' && (
-            <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />
-          )}
-          {tab === 'products' && (
-            <ProductsTab onSaved={showSaved} />
-          )}
-          {tab === 'pinned' && (
-            <PinnedTab onSaved={showSaved} />
-          )}
-          {tab === 'subscribers' && (
-            <SubscribersTab />
-          )}
-          {tab === 'email' && (
-            <EmailTab onSaved={showSaved} />
-          )}
-          {tab === 'analytics' && (
-            <AnalyticsTab />
-          )}
-          {tab === 'reviews' && (
-            <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />
-          )}
+        {/* DESKTOP HEADER */}
+        {!isMobile && (
+          <div style={s.header}>
+            <div style={s.headerTitle}>{TAB_TITLES[tab]}</div>
+            {saved && <div style={s.savedBadge}>✓ Saved</div>}
+          </div>
+        )}
+
+        <div style={{ ...s.content, ...(isMobile ? { padding: '0 16px 40px' } : {}) }}>
+          {tab === 'profile'     && <ProfileTab profile={profile} update={updateProfile} onSaved={showSaved} />}
+          {tab === 'socials'     && <SocialsTab data={linksData} save={saveLinks} onSaved={showSaved} />}
+          {tab === 'links'       && <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />}
+          {tab === 'products'    && <ProductsTab onSaved={showSaved} />}
+          {tab === 'pinned'      && <PinnedTab onSaved={showSaved} />}
+          {tab === 'subscribers' && <SubscribersTab />}
+          {tab === 'email'       && <EmailTab onSaved={showSaved} />}
+          {tab === 'analytics'   && <AnalyticsTab />}
+          {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
         </div>
       </main>
     </div>
@@ -492,6 +568,7 @@ function SocialsTab({ data, save, onSaved }) {
 function SortableSocialRow({ item, update, toggle, remove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={{ ...s.row, ...style }}>
@@ -507,8 +584,9 @@ function SortableSocialRow({ item, update, toggle, remove }) {
         <button style={{ ...s.iconBtn, color: item.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={() => toggle(item.id)}>
           {item.visible ? '👁' : '🚫'}
         </button>
-        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => remove(item.id)}>✕</button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => requestConfirm('Remove this social link?', () => remove(item.id))}>✕</button>
       </div>
+      {ConfirmModal}
     </div>
   )
 }
@@ -605,9 +683,11 @@ function LinksTab({ data, save, onSaved }) {
 function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onToggleVisible, onRemove, onAddLink, onRemoveLink, onUpdateLink, onLinkDragEnd, sensors }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={style}>
+      {ConfirmModal}
       <div style={s.sectionRow}>
         <span {...attributes} {...listeners} style={s.drag}>⠿</span>
         <button style={s.expandBtn} onClick={onToggleExpand}>
@@ -623,7 +703,7 @@ function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onTog
         <button style={{ ...s.iconBtn, color: section.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={onToggleVisible}>
           {section.visible ? '👁' : '🚫'}
         </button>
-        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={onRemove}>✕</button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => requestConfirm(`Delete "${section.label}" and all its links?`, onRemove)}>✕</button>
       </div>
 
       {expanded && (
@@ -651,6 +731,7 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [showSchedule, setShowSchedule] = useState(!!(link.startDate || link.endDate))
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={{ ...s.linkRow, ...style }}>
@@ -757,7 +838,8 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
         )}
 
       </div>
-      <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={onRemove}>✕</button>
+      <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={() => requestConfirm('Delete this link?', onRemove)}>✕</button>
+      {ConfirmModal}
     </div>
   )
 }
@@ -877,6 +959,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: product.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [open, setOpen] = React.useState(!product.name)
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: '10px 12px' }}>
@@ -912,7 +995,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
           <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 6px' }} onClick={toggle}>
             {product.visible ? '👁' : '🚫'}
           </button>
-          <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 6px' }} onClick={remove}>✕</button>
+          <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 6px' }} onClick={() => requestConfirm(`Delete "${product.name || 'this product'}"?`, remove)}>✕</button>
           <button
             style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 6px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
             onClick={() => setOpen(o => !o)}
@@ -954,6 +1037,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
           </label>
         </div>
       )}
+      {ConfirmModal}
     </div>
   )
 }
@@ -1199,6 +1283,7 @@ function EmailTab({ onSaved }) {
 function SubscribersTab() {
   const { subscribers, loading } = useSubscribers()
   const [search, setSearch] = useState('')
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   if (loading) return <Loader />
 
@@ -1287,7 +1372,7 @@ function SubscribersTab() {
                   {date}
                 </span>
                 <button
-                  onClick={() => { if (window.confirm(`Remove ${sub.email}?`)) removeSubscriber(sub.id) }}
+                  onClick={() => requestConfirm(`Remove ${sub.email}?`, () => removeSubscriber(sub.id))}
                   style={{ ...s.iconBtn, color: 'var(--red)', fontSize: 13, marginLeft: 8, flexShrink: 0 }}
                 >✕</button>
               </div>
@@ -1296,6 +1381,7 @@ function SubscribersTab() {
         )}
       </div>
 
+      {ConfirmModal}
     </div>
   )
 }
@@ -1712,6 +1798,7 @@ function AreaChart({ data }) {
 function ReviewsTab({ profile, update, onSaved }) {
   const { reviews, loading, approve, reject, unapprove, remove, togglePin } = useAdminReviews()
   const [subTab, setSubTab] = useState('pending')
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   const pending  = reviews.filter(r => r.status === 'pending')
   const approved = reviews.filter(r => r.status === 'approved')
@@ -1805,11 +1892,12 @@ function ReviewsTab({ profile, update, onSaved }) {
                   {r.pinned ? '📌 Unpin' : '📌 Pin'}
                 </button>
               )}
-              <button onClick={() => { if (window.confirm('Delete this review?')) remove(r.id) }} style={{ ...s.iconBtn, background: 'rgba(239,68,68,0.06)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 12, fontWeight: 600 }}>Delete</button>
+              <button onClick={() => requestConfirm('Delete this review?', () => remove(r.id))} style={{ ...s.iconBtn, background: 'rgba(239,68,68,0.06)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 12, fontWeight: 600 }}>Delete</button>
             </div>
           </div>
         )
       })}
+      {ConfirmModal}
     </div>
   )
 }
@@ -1915,6 +2003,24 @@ const s = {
     border: '1px solid var(--border)', borderRadius: 8,
     color: 'var(--text2)', fontSize: 12, cursor: 'pointer',
   },
+  closeBtn: {
+    background: 'transparent', border: 'none', fontSize: 16, cursor: 'pointer',
+    color: 'var(--muted)', padding: '4px 8px', borderRadius: 6, lineHeight: 1,
+  },
+  mobileTopBar: {
+    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 90,
+    height: 56, background: 'var(--surface)', borderBottom: '1px solid var(--border)',
+    display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12,
+  },
+  hamburger: {
+    background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer',
+    color: 'var(--text)', padding: '6px 8px', borderRadius: 8, flexShrink: 0, lineHeight: 1,
+  },
+  mobileTabTitle: {
+    flex: 1, fontSize: 16, fontWeight: 700, color: 'var(--text)',
+    fontFamily: "'SF Pro Display', -apple-system, sans-serif",
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  },
   main: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1939,7 +2045,7 @@ const s = {
   select: {
     background: 'var(--surface2)', border: '1px solid var(--border)',
     borderRadius: 8, padding: '10px 12px', color: 'var(--text)',
-    fontSize: 13, outline: 'none', cursor: 'pointer',
+    fontSize: 13, outline: 'none', cursor: 'pointer', width: '100%',
   },
   saveBtn: {
     marginTop: 8, padding: '12px 24px', background: 'var(--accent)',
@@ -1957,7 +2063,7 @@ const s = {
     background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: 10, padding: '10px 12px',
   },
-  rowFields: { display: 'flex', gap: 8, flex: 1 },
+  rowFields: { display: 'flex', gap: 8, flex: 1, flexWrap: 'wrap' },
   rowActions: { display: 'flex', gap: 4 },
   drag: { color: 'var(--muted)', cursor: 'grab', fontSize: 18, userSelect: 'none', flexShrink: 0 },
   iconBtn: { background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14, padding: '4px 6px', borderRadius: 6 },
