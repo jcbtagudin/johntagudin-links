@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useLinkAnalytics, useProfile } from '../hooks/useData'
 
@@ -18,20 +18,35 @@ const aggregate = (arr, key) => {
   return Object.entries(map).sort((a, b) => b[1] - a[1])
 }
 
+const RANGES = [
+  { value: '7',   label: '7 days' },
+  { value: '30',  label: '30 days' },
+  { value: 'all', label: 'All time' },
+]
+
 export default function LinkAnalyticsPage() {
   const { linkId } = useParams()
   const [searchParams] = useSearchParams()
   const { clicks, loading } = useLinkAnalytics(linkId)
   const { profile } = useProfile()
+  const [range, setRange] = useState('all')
 
   const linkTitle = searchParams.get('title') || clicks[0]?.linkTitle || linkId
 
-  const bySource  = aggregate(clicks, 'source')
-  const byDevice  = aggregate(clicks, 'device')
-  const byBrowser = aggregate(clicks, 'browser')
+  // Filter by time range
+  const filtered = range === 'all' ? clicks : clicks.filter(c => {
+    const d = c.timestamp?.toDate ? c.timestamp.toDate() : (c.timestamp ? new Date(c.timestamp) : null)
+    if (!d) return false
+    return d > new Date(Date.now() - parseInt(range) * 86400000)
+  })
+
+  const bySource  = aggregate(filtered, 'source')
+  const byDevice  = aggregate(filtered, 'device')
+  const byBrowser = aggregate(filtered, 'browser')
+  const byOS      = aggregate(filtered, 'os')
 
   const byCountryRaw = {}
-  clicks.forEach(c => {
+  filtered.forEach(c => {
     if (!c.country || c.country === 'unknown') return
     if (!byCountryRaw[c.country]) byCountryRaw[c.country] = { count: 0, code: c.countryCode || '' }
     byCountryRaw[c.country].count++
@@ -39,7 +54,9 @@ export default function LinkAnalyticsPage() {
   const byCountry = Object.entries(byCountryRaw).sort((a, b) => b[1].count - a[1].count).slice(0, 10)
 
   const today = new Date().toISOString().split('T')[0]
-  const clicksToday = clicks.filter(c => c.date === today).length
+  const clicksToday = filtered.filter(c => c.date === today).length
+
+  const rangeLabel = range === 'all' ? 'All-time data' : `Last ${range} days`
 
   const bar = (count, max) => (
     <div style={{ flex: 1, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 99, overflow: 'hidden' }}>
@@ -93,7 +110,7 @@ export default function LinkAnalyticsPage() {
         )}
 
         {/* Page header */}
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 20 }}>
           <div style={{
             display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: 0.8,
             color: 'var(--accent)', background: 'rgba(74,124,64,0.1)',
@@ -105,13 +122,32 @@ export default function LinkAnalyticsPage() {
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1.25, letterSpacing: '-0.3px' }}>
             {linkTitle}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>All-time data</div>
+        </div>
+
+        {/* Time range selector */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{rangeLabel}</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {RANGES.map(r => (
+              <button
+                key={r.value}
+                onClick={() => setRange(r.value)}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)',
+                  fontSize: 12, cursor: 'pointer', fontWeight: range === r.value ? 600 : 400,
+                  background: range === r.value ? 'rgba(74,124,64,0.1)' : 'var(--surface)',
+                  color: range === r.value ? 'var(--accent)' : 'var(--text2)',
+                  transition: 'all 0.15s',
+                }}
+              >{r.label}</button>
+            ))}
+          </div>
         </div>
 
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 24 }}>
           {[
-            { label: 'Total Clicks', value: clicks.length, accent: true },
+            { label: 'Total Clicks', value: filtered.length, accent: true },
             { label: 'Today',        value: clicksToday },
           ].map(stat => (
             <div key={stat.label} style={{
@@ -131,13 +167,13 @@ export default function LinkAnalyticsPage() {
           ))}
         </div>
 
-        {clicks.length === 0 ? (
+        {filtered.length === 0 ? (
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 16, padding: '60px 20px', textAlign: 'center',
             color: 'var(--muted)', fontSize: 14,
           }}>
-            No analytics data for this link yet.
+            {clicks.length > 0 ? 'No clicks in this time period. Try "All time".' : 'No analytics data for this link yet.'}
           </div>
         ) : (
           <>
@@ -165,7 +201,7 @@ export default function LinkAnalyticsPage() {
               </div>
               {byDevice.map(([device, count], i) => {
                 const icon = device === 'mobile' ? '📱' : device === 'desktop' ? '🖥' : device === 'tablet' ? '📟' : '❓'
-                const pct = clicks.length > 0 ? `${((count / clicks.length) * 100).toFixed(1)}%` : '—'
+                const pct = filtered.length > 0 ? `${((count / filtered.length) * 100).toFixed(1)}%` : '—'
                 return (
                   <div key={device} style={rowStyle(i)}>
                     <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
@@ -209,6 +245,27 @@ export default function LinkAnalyticsPage() {
                     <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
                     <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{browser}</span>
                     {bar(count, byBrowser[0]?.[1] || 1)}
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* OS */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Operating Systems</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+              </div>
+              {byOS.map(([os, count], i) => {
+                const icon = os.toLowerCase().includes('ios') ? '🍎' : os.toLowerCase().includes('android') ? '🤖' : os.toLowerCase().includes('windows') ? '🪟' : os.toLowerCase().includes('mac') ? '🍎' : os.toLowerCase().includes('linux') ? '🐧' : '💻'
+                const pct = filtered.length > 0 ? `${((count / filtered.length) * 100).toFixed(1)}%` : '—'
+                return (
+                  <div key={os} style={rowStyle(i)}>
+                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', width: 110, flexShrink: 0, textTransform: 'capitalize' }}>{os}</span>
+                    {bar(count, byOS[0]?.[1] || 1)}
+                    <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 40, textAlign: 'right' }}>{pct}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
                   </div>
                 )
