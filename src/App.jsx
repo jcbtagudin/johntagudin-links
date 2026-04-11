@@ -19,13 +19,12 @@ function ProtectedRoute({ children }) {
 
 function MaintenanceGate({ children }) {
   const { settings, loading } = useSettings()
-  const { isAdmin } = useAuth()
   const location = useLocation()
 
-  // Always allow admin routes through
+  // Always allow admin routes through regardless of maintenance mode
   if (location.pathname.startsWith('/admin')) return children
   if (loading) return null
-  if (settings?.maintenanceMode && !isAdmin) return <MaintenancePage />
+  if (settings?.maintenanceMode) return <MaintenancePage />
   return children
 }
 
