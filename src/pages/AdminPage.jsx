@@ -732,6 +732,15 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [showSchedule, setShowSchedule] = useState(!!(link.startDate || link.endDate))
   const { requestConfirm, ConfirmModal } = useConfirm()
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  const copyRedirectUrl = () => {
+    const url = `${window.location.origin}/l/${link.id}`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedLink(true)
+      setTimeout(() => setCopiedLink(false), 2000)
+    })
+  }
 
   return (
     <div ref={setNodeRef} style={{ ...s.linkRow, ...style }}>
@@ -838,7 +847,20 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
         )}
 
       </div>
-      <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={() => requestConfirm('Delete this link?', onRemove)}>✕</button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+        <button
+          title={`Copy redirect URL: /l/${link.id}`}
+          onClick={copyRedirectUrl}
+          style={{
+            ...s.iconBtn, fontSize: 12, padding: '4px 8px', borderRadius: 6,
+            border: '1px solid var(--border)',
+            background: copiedLink ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
+            color: copiedLink ? 'var(--accent)' : 'var(--muted)',
+            fontWeight: copiedLink ? 600 : 400, whiteSpace: 'nowrap',
+          }}
+        >{copiedLink ? '✓' : '🔗'}</button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => requestConfirm('Delete this link?', onRemove)}>✕</button>
+      </div>
       {ConfirmModal}
     </div>
   )
