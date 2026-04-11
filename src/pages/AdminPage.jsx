@@ -40,6 +40,58 @@ function scheduleStatusStyle(link) {
   }
 }
 
+// ─── CONFIRM DIALOG HOOK ─────────────────────────────────────────────────────
+function useConfirm() {
+  const [dialog, setDialog] = useState(null)
+
+  const requestConfirm = (message, onConfirm) => setDialog({ message, onConfirm })
+  const close = () => setDialog(null)
+
+  const ConfirmModal = dialog ? (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', padding: 20,
+      }}
+      onClick={close}
+    >
+      <div
+        style={{
+          background: 'var(--surface)', borderRadius: 14, padding: '24px 20px',
+          maxWidth: 300, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+          display: 'flex', flexDirection: 'column', gap: 18,
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.5 }}>
+          {dialog.message}
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button
+            onClick={close}
+            style={{
+              padding: '9px 18px', background: 'var(--surface2)',
+              border: '1px solid var(--border)', borderRadius: 8,
+              color: 'var(--text2)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+            }}
+          >Cancel</button>
+          <button
+            onClick={() => { dialog.onConfirm(); close() }}
+            style={{
+              padding: '9px 18px', background: 'var(--red)',
+              border: 'none', borderRadius: 8,
+              color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >Delete</button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
+  return { requestConfirm, ConfirmModal }
+}
+
 // ─── ADMIN PAGE ─────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { user } = useAuth()
@@ -516,6 +568,7 @@ function SocialsTab({ data, save, onSaved }) {
 function SortableSocialRow({ item, update, toggle, remove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={{ ...s.row, ...style }}>
@@ -531,8 +584,9 @@ function SortableSocialRow({ item, update, toggle, remove }) {
         <button style={{ ...s.iconBtn, color: item.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={() => toggle(item.id)}>
           {item.visible ? '👁' : '🚫'}
         </button>
-        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => remove(item.id)}>✕</button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => requestConfirm('Remove this social link?', () => remove(item.id))}>✕</button>
       </div>
+      {ConfirmModal}
     </div>
   )
 }
@@ -629,9 +683,11 @@ function LinksTab({ data, save, onSaved }) {
 function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onToggleVisible, onRemove, onAddLink, onRemoveLink, onUpdateLink, onLinkDragEnd, sensors }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={style}>
+      {ConfirmModal}
       <div style={s.sectionRow}>
         <span {...attributes} {...listeners} style={s.drag}>⠿</span>
         <button style={s.expandBtn} onClick={onToggleExpand}>
@@ -647,7 +703,7 @@ function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onTog
         <button style={{ ...s.iconBtn, color: section.visible ? 'var(--accent)' : 'var(--muted)' }} onClick={onToggleVisible}>
           {section.visible ? '👁' : '🚫'}
         </button>
-        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={onRemove}>✕</button>
+        <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => requestConfirm(`Delete "${section.label}" and all its links?`, onRemove)}>✕</button>
       </div>
 
       {expanded && (
@@ -675,6 +731,7 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [showSchedule, setShowSchedule] = useState(!!(link.startDate || link.endDate))
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={{ ...s.linkRow, ...style }}>
@@ -781,7 +838,8 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
         )}
 
       </div>
-      <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={onRemove}>✕</button>
+      <button style={{ ...s.iconBtn, color: 'var(--red)', alignSelf: 'flex-start', marginTop: 4 }} onClick={() => requestConfirm('Delete this link?', onRemove)}>✕</button>
+      {ConfirmModal}
     </div>
   )
 }
@@ -901,6 +959,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: product.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [open, setOpen] = React.useState(!product.name)
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   return (
     <div ref={setNodeRef} style={{ ...s.linkRow, ...style, flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: '10px 12px' }}>
@@ -936,7 +995,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
           <button style={{ ...s.iconBtn, color: product.visible ? 'var(--accent)' : 'var(--muted)', padding: '2px 6px' }} onClick={toggle}>
             {product.visible ? '👁' : '🚫'}
           </button>
-          <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 6px' }} onClick={remove}>✕</button>
+          <button style={{ ...s.iconBtn, color: 'var(--red)', padding: '2px 6px' }} onClick={() => requestConfirm(`Delete "${product.name || 'this product'}"?`, remove)}>✕</button>
           <button
             style={{ ...s.iconBtn, color: 'var(--muted)', padding: '2px 6px', fontSize: 11, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
             onClick={() => setOpen(o => !o)}
@@ -978,6 +1037,7 @@ function SortableProductRow({ product, update, toggle, remove }) {
           </label>
         </div>
       )}
+      {ConfirmModal}
     </div>
   )
 }
@@ -1223,6 +1283,7 @@ function EmailTab({ onSaved }) {
 function SubscribersTab() {
   const { subscribers, loading } = useSubscribers()
   const [search, setSearch] = useState('')
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   if (loading) return <Loader />
 
@@ -1311,7 +1372,7 @@ function SubscribersTab() {
                   {date}
                 </span>
                 <button
-                  onClick={() => { if (window.confirm(`Remove ${sub.email}?`)) removeSubscriber(sub.id) }}
+                  onClick={() => requestConfirm(`Remove ${sub.email}?`, () => removeSubscriber(sub.id))}
                   style={{ ...s.iconBtn, color: 'var(--red)', fontSize: 13, marginLeft: 8, flexShrink: 0 }}
                 >✕</button>
               </div>
@@ -1320,6 +1381,7 @@ function SubscribersTab() {
         )}
       </div>
 
+      {ConfirmModal}
     </div>
   )
 }
@@ -1736,6 +1798,7 @@ function AreaChart({ data }) {
 function ReviewsTab({ profile, update, onSaved }) {
   const { reviews, loading, approve, reject, unapprove, remove, togglePin } = useAdminReviews()
   const [subTab, setSubTab] = useState('pending')
+  const { requestConfirm, ConfirmModal } = useConfirm()
 
   const pending  = reviews.filter(r => r.status === 'pending')
   const approved = reviews.filter(r => r.status === 'approved')
@@ -1829,11 +1892,12 @@ function ReviewsTab({ profile, update, onSaved }) {
                   {r.pinned ? '📌 Unpin' : '📌 Pin'}
                 </button>
               )}
-              <button onClick={() => { if (window.confirm('Delete this review?')) remove(r.id) }} style={{ ...s.iconBtn, background: 'rgba(239,68,68,0.06)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 12, fontWeight: 600 }}>Delete</button>
+              <button onClick={() => requestConfirm('Delete this review?', () => remove(r.id))} style={{ ...s.iconBtn, background: 'rgba(239,68,68,0.06)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 12, fontWeight: 600 }}>Delete</button>
             </div>
           </div>
         )
       })}
+      {ConfirmModal}
     </div>
   )
 }
