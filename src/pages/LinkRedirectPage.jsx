@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useLinks, usePinned, logClick } from '../hooks/useData'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
+import { logClick } from '../hooks/useData'
 
 function detectSource() {
   const refParam = new URLSearchParams(window.location.search).get('ref')
@@ -45,47 +47,55 @@ function collectMeta() {
 
 export default function LinkRedirectPage() {
   const { linkId } = useParams()
-  const { data: linksData, loading: linksLoading } = useLinks()
-  const { pinned, loading: pinnedLoading } = usePinned()
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    if (linksLoading || pinnedLoading) return
-
-    // Resolve link from data
-    let found = null
-    let sectionId = null
-
-    if (linkId === 'pinned' && pinned?.url) {
-      found = { id: 'pinned', title: pinned.title, url: pinned.url }
-      sectionId = 'pinned'
-    }
-
-    if (!found && linksData?.sections) {
-      for (const section of linksData.sections) {
-        const link = section.links?.find(l => l.id === linkId)
-        if (link) { found = link; sectionId = section.id; break }
-      }
-    }
-
-    if (!found?.url) { setNotFound(true); return }
-
-    // Log click then redirect
-    const baseMeta = collectMeta()
     ;(async () => {
       try {
-        const geo = await fetch('https://ipapi.co/json/').then(r => r.ok ? r.json() : null)
-        await logClick(found.id, found.title, sectionId, {
-          ...baseMeta,
-          country:     geo?.country_name || 'unknown',
-          countryCode: geo?.country_code || 'unknown',
-        })
+        // Read-only fetches — never write default data
+        let found = null
+        let sectionId = null
+
+        if (linkId === 'pinned') {
+          const snap = await getDoc(doc(db, 'config', 'pinned'))
+          const pinned = snap.exists() ? snap.data() : null
+          if (pinned?.url) {
+            found = { id: 'pinned', title: pinned.title, url: pinned.url }
+            sectionId = 'pinned'
+          }
+        }
+
+        if (!found) {
+          const snap = await getDoc(doc(db, 'config', 'links'))
+          const linksData = snap.exists() ? snap.data() : null
+          if (linksData?.sections) {
+            for (const section of linksData.sections) {
+              const link = section.links?.find(l => l.id === linkId)
+              if (link) { found = link; sectionId = section.id; break }
+            }
+          }
+        }
+
+        if (!found?.url) { setNotFound(true); return }
+
+        // Log click then redirect
+        const baseMeta = collectMeta()
+        try {
+          const geo = await fetch('https://ipapi.co/json/').then(r => r.ok ? r.json() : null)
+          await logClick(found.id, found.title, sectionId, {
+            ...baseMeta,
+            country:     geo?.country_name || 'unknown',
+            countryCode: geo?.country_code || 'unknown',
+          })
+        } catch {
+          await logClick(found.id, found.title, sectionId, baseMeta).catch(() => {})
+        }
+        window.location.replace(found.url)
       } catch {
-        await logClick(found.id, found.title, sectionId, baseMeta).catch(() => {})
+        setNotFound(true)
       }
-      window.location.replace(found.url)
     })()
-  }, [linksLoading, pinnedLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [linkId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (notFound) {
     return (
