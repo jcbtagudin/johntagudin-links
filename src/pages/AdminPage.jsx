@@ -1287,6 +1287,22 @@ function SubscribersTab() {
 
   if (loading) return <Loader />
 
+  // Growth chart data — last 30 days
+  const last30 = {}
+  for (let i = 29; i >= 0; i--) {
+    const key = new Date(Date.now() - i * 86400000).toISOString().split('T')[0]
+    last30[key] = 0
+  }
+  subscribers.forEach(s => {
+    const d = s.subscribedAt?.toDate ? s.subscribedAt.toDate() : (s.subscribedAt ? new Date(s.subscribedAt) : null)
+    if (!d) return
+    const key = d.toISOString().split('T')[0]
+    if (key in last30) last30[key]++
+  })
+  const growthData = Object.entries(last30).map(([date, count]) => ({ date, count }))
+  const newThisWeek  = growthData.slice(-7).reduce((sum, d) => sum + d.count, 0)
+  const newThisMonth = growthData.reduce((sum, d) => sum + d.count, 0)
+
   const filtered = search.trim()
     ? subscribers.filter(s => s.email?.toLowerCase().includes(search.trim().toLowerCase()))
     : subscribers
@@ -1312,19 +1328,36 @@ function SubscribersTab() {
   return (
     <div style={{ ...s.tabBody, maxWidth: 680 }}>
 
-      {/* Big total count */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 16, padding: '28px 32px',
-        display: 'flex', alignItems: 'baseline', gap: 10,
-      }}>
-        <div style={{
-          fontFamily: "'SF Pro Display', -apple-system, sans-serif",
-          fontSize: 60, fontWeight: 800, lineHeight: 1, color: 'var(--text)', letterSpacing: -3,
-        }}>
-          {subscribers.length}
+      {/* Stats + Growth Chart */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        {/* Stats row */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+          {[
+            { label: 'Total',      value: subscribers.length, accent: true },
+            { label: 'This Week',  value: newThisWeek },
+            { label: 'This Month', value: newThisMonth },
+          ].map((stat, i, arr) => (
+            <div key={stat.label} style={{ flex: 1, padding: '20px 24px', borderRight: i < arr.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8, fontWeight: 500, letterSpacing: 0.2 }}>{stat.label}</div>
+              <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1, fontFamily: "'SF Pro Display', -apple-system, sans-serif", color: stat.accent ? 'var(--accent)' : 'var(--text)' }}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--muted)', letterSpacing: 0.2 }}>subscribers</div>
+        {/* Growth chart */}
+        <div style={{ padding: '16px 24px 8px' }}>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4, fontWeight: 500 }}>
+            NEW SUBSCRIBERS — LAST 30 DAYS
+          </div>
+          {growthData.some(d => d.count > 0) ? (
+            <AreaChart data={growthData} />
+          ) : (
+            <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13 }}>
+              No new subscribers in the last 30 days.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Search + Export */}
@@ -1443,6 +1476,25 @@ function AnalyticsTab() {
   const byDevice  = aggregate(filtered, 'device')
   const byBrowser = aggregate(filtered, 'browser')
   const byOS      = aggregate(filtered, 'os')
+
+  // Day of week
+  const DOW_ORDER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const byDayOfWeek = Object.fromEntries(DOW_ORDER.map(d => [d, 0]))
+  filtered.forEach(c => {
+    if (!c.timestamp) return
+    const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
+    byDayOfWeek[DOW_ORDER[d.getDay()]]++
+  })
+  const dowMax = Math.max(...Object.values(byDayOfWeek), 1)
+
+  // Hour of day
+  const byHour = Array(24).fill(0)
+  filtered.forEach(c => {
+    if (!c.timestamp) return
+    const d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp)
+    byHour[d.getHours()]++
+  })
+  const hourMax = Math.max(...byHour, 1)
 
   const byCountryRaw = {}
   filtered.forEach(c => {
@@ -1564,7 +1616,10 @@ function AnalyticsTab() {
         <div style={{ borderTop: '1px solid var(--border)', marginTop: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 24px 10px' }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Top Links</span>
-            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>CTR</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            </div>
           </div>
 
           {sorted.length === 0 ? (
@@ -1597,8 +1652,11 @@ function AnalyticsTab() {
                   }}>#{i + 1}</div>
                   <span style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, marginLeft: 16 }}>
-                  <div style={{ width: 72, height: 4, background: 'var(--surface2)', borderRadius: 99 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 16 }}>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', minWidth: 38, textAlign: 'right' }}>
+                    {filteredPV.length > 0 ? `${((count / filteredPV.length) * 100).toFixed(1)}%` : '—'}
+                  </span>
+                  <div style={{ width: 60, height: 4, background: 'var(--surface2)', borderRadius: 99 }}>
                     <div style={{
                       height: '100%', borderRadius: 99,
                       width: `${(count / (sorted[0]?.[1].count || 1)) * 100}%`,
@@ -1718,6 +1776,79 @@ function AnalyticsTab() {
                 )
               })}
             </div>
+
+            {/* OS */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Operating Systems</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+              </div>
+              {byOS.map(([os, count], i) => {
+                const icon = os.toLowerCase().includes('ios') ? '🍎' : os.toLowerCase().includes('android') ? '🤖' : os.toLowerCase().includes('windows') ? '🪟' : os.toLowerCase().includes('mac') ? '🍎' : os.toLowerCase().includes('linux') ? '🐧' : '💻'
+                const pct = filtered.length > 0 ? `${((count / filtered.length) * 100).toFixed(1)}%` : '—'
+                return (
+                  <div key={os} style={rowStyle(i)}>
+                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text)', width: 110, flexShrink: 0, textTransform: 'capitalize' }}>{os}</span>
+                    {bar(count, byOS[0]?.[1] || 1)}
+                    <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 40, textAlign: 'right' }}>{pct}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Day of Week + Hour of Day */}
+            <div style={cardStyle}>
+              <div style={headerStyle}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>When People Click</span>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>By day & hour</span>
+              </div>
+              <div style={{ padding: '16px 24px' }}>
+                {/* Day of week bars */}
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', letterSpacing: 0.4, marginBottom: 10 }}>DAY OF WEEK</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+                  {DOW_ORDER.map(day => (
+                    <div key={day} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text2)', width: 30, flexShrink: 0 }}>{day}</span>
+                      <div style={{ flex: 1, height: 6, background: 'var(--surface2)', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 99, background: 'var(--accent)', transition: 'width 0.4s ease', width: `${(byDayOfWeek[day] / dowMax) * 100}%` }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', minWidth: 24, textAlign: 'right' }}>{byDayOfWeek[day]}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Hour heatmap */}
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', letterSpacing: 0.4, marginBottom: 10 }}>HOUR OF DAY</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3 }}>
+                  {byHour.slice(0, 12).map((count, h) => (
+                    <div key={h} title={`${h}:00 — ${count} clicks`} style={{
+                      height: 34, borderRadius: 5, cursor: 'default',
+                      background: `rgba(74,124,64,${hourMax > 0 ? 0.07 + (count / hourMax) * 0.75 : 0.07})`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                    }}>
+                      <span style={{ fontSize: 9, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>{h}</span>
+                      {count > 0 && <span style={{ fontSize: 8, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)' }}>{count}</span>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 3, marginTop: 3 }}>
+                  {byHour.slice(12, 24).map((count, h) => (
+                    <div key={h + 12} title={`${h + 12}:00 — ${count} clicks`} style={{
+                      height: 34, borderRadius: 5, cursor: 'default',
+                      background: `rgba(74,124,64,${hourMax > 0 ? 0.07 + (count / hourMax) * 0.75 : 0.07})`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                    }}>
+                      <span style={{ fontSize: 9, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>{h + 12}</span>
+                      {count > 0 && <span style={{ fontSize: 8, color: count > hourMax * 0.5 ? 'var(--accent)' : 'var(--muted)' }}>{count}</span>}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--muted)', marginTop: 6 }}>
+                  <span>12 AM</span><span>12 PM</span><span>11 PM</span>
+                </div>
+              </div>
+            </div>
           </>
         )
       })()}
@@ -1759,6 +1890,7 @@ function LinkDetailPanel({ linkId, title, allClicks, days, range, onBack }) {
   const bySource  = aggregate(linkClicks, 'source')
   const byDevice  = aggregate(linkClicks, 'device')
   const byBrowser = aggregate(linkClicks, 'browser')
+  const byOS      = aggregate(linkClicks, 'os')
 
   const byCountryRaw = {}
   linkClicks.forEach(c => {
@@ -1945,6 +2077,27 @@ function LinkDetailPanel({ linkId, title, allClicks, days, range, onBack }) {
                   <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
                   <span style={{ fontSize: 13, color: 'var(--text)', width: 90, flexShrink: 0, textTransform: 'capitalize' }}>{browser}</span>
                   {bar(count, byBrowser[0]?.[1] || 1)}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* OS */}
+          <div style={cardStyle}>
+            <div style={headerStyle}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Operating Systems</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Clicks ↓</span>
+            </div>
+            {byOS.map(([os, count], i) => {
+              const icon = os.toLowerCase().includes('ios') ? '🍎' : os.toLowerCase().includes('android') ? '🤖' : os.toLowerCase().includes('windows') ? '🪟' : os.toLowerCase().includes('mac') ? '🍎' : os.toLowerCase().includes('linux') ? '🐧' : '💻'
+              const pct = linkClicks.length > 0 ? `${((count / linkClicks.length) * 100).toFixed(1)}%` : '—'
+              return (
+                <div key={os} style={rowStyle(i)}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text)', width: 110, flexShrink: 0, textTransform: 'capitalize' }}>{os}</span>
+                  {bar(count, byOS[0]?.[1] || 1)}
+                  <span style={{ fontSize: 12, color: 'var(--muted)', minWidth: 40, textAlign: 'right' }}>{pct}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 28, textAlign: 'right' }}>{count}</span>
                 </div>
               )
