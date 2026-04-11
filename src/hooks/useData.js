@@ -10,6 +10,7 @@ const LINKS_DOC     = 'config/links'
 const PINNED_DOC    = 'config/pinned'
 const PRODUCTS_DOC  = 'config/products'
 const EMAIL_DOC     = 'config/email'
+const SETTINGS_DOC  = 'config/settings'
 
 // Default data seeded on first run
 const DEFAULT_PROFILE = {
@@ -412,4 +413,38 @@ export function useProducts() {
   }
 
   return { products, loading, save }
+}
+
+// ─── SITE SETTINGS ────────────────────────────────────────────────────────────
+
+const DEFAULT_SETTINGS = {
+  maintenanceMode: false,
+  maintenanceTitle: 'Under Maintenance',
+  maintenanceMessage: 'We\'ll be back shortly. Thanks for your patience!',
+}
+
+export function useSettings() {
+  const [settings, setSettings] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const ref = doc(db, ...SETTINGS_DOC.split('/'))
+    const unsub = onSnapshot(ref, async (snap) => {
+      if (snap.exists()) {
+        setSettings({ ...DEFAULT_SETTINGS, ...snap.data() })
+      } else {
+        await setDoc(ref, DEFAULT_SETTINGS)
+        setSettings(DEFAULT_SETTINGS)
+      }
+      setLoading(false)
+    })
+    return unsub
+  }, [])
+
+  const save = async (data) => {
+    const ref = doc(db, ...SETTINGS_DOC.split('/'))
+    await setDoc(ref, data, { merge: true })
+  }
+
+  return { settings, loading, save }
 }
