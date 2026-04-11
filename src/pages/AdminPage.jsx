@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, storage } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews, removeSubscriber } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews, useSettings, removeSubscriber } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -145,12 +145,14 @@ export default function AdminPage() {
     { id: 'email',       label: '✉️ Email' },
     { id: 'analytics',   label: '📊 Analytics' },
     { id: 'reviews',     label: '⭐ Reviews' },
+    { id: 'settings',    label: '⚙️ Settings' },
   ]
 
   const TAB_TITLES = {
     profile: 'Profile Settings', socials: 'Social Links', links: 'Link Sections',
     products: 'Gumroad Products', pinned: 'Pinned Link', subscribers: 'Subscribers',
     email: 'Welcome Email', analytics: 'Click Analytics', reviews: 'Reviews',
+    settings: 'Settings',
   }
 
   return (
@@ -236,6 +238,7 @@ export default function AdminPage() {
           {tab === 'email'       && <EmailTab onSaved={showSaved} />}
           {tab === 'analytics'   && <AnalyticsTab />}
           {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
+          {tab === 'settings'    && <SettingsTab onSaved={showSaved} />}
         </div>
       </main>
     </div>
@@ -2393,6 +2396,119 @@ function Loader() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--muted)' }}>
       Loading...
+    </div>
+  )
+}
+
+// ─── SETTINGS TAB ────────────────────────────────────────────────────────────
+function SettingsTab({ onSaved }) {
+  const { settings, loading, save } = useSettings()
+  const [form, setForm] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (settings && !form) setForm({ ...settings })
+  }, [settings]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading || !form) return <div style={{ color: 'var(--muted)', fontSize: 13, padding: '32px 0' }}>Loading settings...</div>
+
+  const handleSave = async () => {
+    setSaving(true)
+    await save(form)
+    setSaving(false)
+    onSaved()
+  }
+
+  const cardStyle = {
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 14, overflow: 'hidden', marginBottom: 16,
+  }
+  const cardHeader = {
+    padding: '14px 20px', borderBottom: '1px solid var(--border)',
+    fontSize: 13, fontWeight: 700, color: 'var(--text)',
+  }
+  const cardBody = { padding: '20px' }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxWidth: 620 }}>
+
+      {/* Maintenance Mode */}
+      <div style={cardStyle}>
+        <div style={cardHeader}>🚧 Maintenance Mode</div>
+        <div style={cardBody}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
+                Enable Maintenance Mode
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                When on, visitors see a maintenance page instead of your links page. Admin panel still works.
+              </div>
+            </div>
+            <button
+              onClick={() => setForm(f => ({ ...f, maintenanceMode: !f.maintenanceMode }))}
+              style={{
+                position: 'relative', width: 48, height: 26, borderRadius: 13,
+                border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 16,
+                background: form.maintenanceMode ? 'var(--accent)' : 'var(--border)',
+                transition: 'background 0.2s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3, width: 20, height: 20,
+                borderRadius: '50%', background: '#fff',
+                left: form.maintenanceMode ? 25 : 3,
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+              }} />
+            </button>
+          </div>
+
+          {form.maintenanceMode && (
+            <div style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+              borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+              fontSize: 12, color: '#ef4444', fontWeight: 500,
+            }}>
+              ⚠️ Maintenance mode is ON — your public page is hidden from visitors.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={s.field}>
+              <label style={s.label}>Maintenance Title</label>
+              <input
+                style={s.input}
+                value={form.maintenanceTitle || ''}
+                onChange={e => setForm(f => ({ ...f, maintenanceTitle: e.target.value }))}
+                placeholder="Under Maintenance"
+              />
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Maintenance Message</label>
+              <textarea
+                style={{ ...s.input, minHeight: 80, resize: 'vertical' }}
+                value={form.maintenanceMessage || ''}
+                onChange={e => setForm(f => ({ ...f, maintenanceMessage: e.target.value }))}
+                placeholder="We'll be back shortly. Thanks for your patience!"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        style={{
+          background: 'var(--accent)', color: '#fff', border: 'none',
+          borderRadius: 10, padding: '12px 24px', fontSize: 14,
+          fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
+          opacity: saving ? 0.7 : 1, alignSelf: 'flex-start',
+        }}
+      >
+        {saving ? 'Saving...' : 'Save Settings'}
+      </button>
     </div>
   )
 }
