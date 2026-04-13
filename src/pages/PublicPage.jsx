@@ -204,7 +204,7 @@ export default function PublicPage() {
         )}
 
         {/* PRODUCTS */}
-        <ProductsSection products={products} logClick={logClick} styles={styles} />
+        <ProductsSection products={products} styles={styles} />
 
         {/* SECTIONS */}
         {visibleSections.map(section => {
@@ -412,7 +412,7 @@ function LatestVideoCard({ inlinePreview }) {
 
 const COLLAPSE_THRESHOLD = 3
 
-function ProductsSection({ products, logClick, styles }) {
+function ProductsSection({ products, styles }) {
   const [expanded, setExpanded] = useState(false)
   const [activeSlide, setActiveSlide] = useState(0)
   const sliderRef = useRef(null)
@@ -464,11 +464,10 @@ function ProductsSection({ products, logClick, styles }) {
               {visibleProducts.map(product => (
                 <a
                   key={product.id}
-                  href={product.url}
+                  href={`/l/${product.id}`}
                   target="_blank"
                   rel="noopener"
                   className={`${styles.productSliderCard} ${product.featured ? styles.featuredProduct : ''}`}
-                  onClick={() => logClick(product.id, product.name, 'products', meta)}
                 >
                   <div className={styles.productThumbGrid}>
                     {product.thumbnailUrl
@@ -509,11 +508,10 @@ function ProductsSection({ products, logClick, styles }) {
           {shown.map(product => (
             <a
               key={product.id}
-              href={product.url}
+              href={`/l/${product.id}`}
               target="_blank"
               rel="noopener"
               className={`${styles.productCardGrid} ${product.featured ? styles.featuredProduct : ''}`}
-              onClick={() => logClick(product.id, product.name, 'products', meta)}
             >
               <div className={styles.productThumbGrid}>
                 {product.thumbnailUrl
@@ -537,11 +535,10 @@ function ProductsSection({ products, logClick, styles }) {
           {shown.map(product => (
             <a
               key={product.id}
-              href={product.url}
+              href={`/l/${product.id}`}
               target="_blank"
               rel="noopener"
               className={`${styles.productCard} ${product.featured ? styles.featuredProduct : ''}`}
-              onClick={() => logClick(product.id, product.name, 'products', meta)}
             >
               <div className={styles.productThumb}>
                 {product.thumbnailUrl

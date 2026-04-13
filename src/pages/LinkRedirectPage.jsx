@@ -76,6 +76,16 @@ export default function LinkRedirectPage() {
           }
         }
 
+        if (!found) {
+          const snap = await getDoc(doc(db, 'config', 'products'))
+          const productsData = snap.exists() ? snap.data() : null
+          const product = productsData?.items?.find(p => p.id === linkId)
+          if (product) {
+            found = { id: product.id, title: product.name, url: product.url }
+            sectionId = 'products'
+          }
+        }
+
         if (!found?.url) { setNotFound(true); return }
 
         // Log click then redirect
