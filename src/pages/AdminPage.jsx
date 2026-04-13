@@ -751,30 +751,47 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
       <div style={s.linkFields}>
 
         {/* Row 1: icon, title, badge */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          {link.iconImage ? (
-            <>
+        {link.iconImage ? (
+          <>
+            <div style={{ display: 'flex', gap: 8 }}>
               <input style={{ ...s.input, flex: 1 }} placeholder="Icon image URL (https://...)" value={link.iconImage} onChange={e => onUpdate('iconImage', e.target.value)} />
               <button type="button" style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, whiteSpace: 'nowrap' }} onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=async(e)=>{ const f=e.target.files?.[0]; if(!f||f.size>5*1024*1024) return; const sr=storageRef(storage,`links/${Date.now()}_${f.name}`); await uploadBytes(sr,f); onUpdate('iconImage', await getDownloadURL(sr)) }; i.click() }}>↑</button>
-            </>
-          ) : (
+              <button type="button" title="Switch to emoji icon" style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, whiteSpace: 'nowrap', background: 'rgba(74,124,64,0.12)', color: 'var(--accent)' }} onClick={() => onUpdate('iconImage', '')}>🖼 IMG</button>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input style={{ ...s.input, flex: 1 }} placeholder="Title" value={link.title} onChange={e => onUpdate('title', e.target.value)} />
+              <select style={{ ...s.select, width: 'auto', flexShrink: 0 }} value={link.badge} onChange={e => onUpdate('badge', e.target.value)}>
+                <option value="">No badge</option>
+                <option value="free">Free</option>
+                <option value="new">New</option>
+                <option value="hot">Hot</option>
+              </select>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', gap: 8 }}>
             <input style={{ ...s.input, width: 60 }} placeholder="Icon" value={link.icon || ''} onChange={e => onUpdate('icon', e.target.value)} title="Emoji icon" />
-          )}
-          <button
-            type="button"
-            title={link.iconImage ? 'Switch to emoji icon' : 'Switch to image icon'}
-            style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, whiteSpace: 'nowrap', background: link.iconImage ? 'rgba(74,124,64,0.12)' : 'transparent', color: link.iconImage ? 'var(--accent)' : 'var(--text2)' }}
-            onClick={() => link.iconImage ? onUpdate('iconImage', '') : onUpdate('iconImage', 'https://')}
-          >
-            {link.iconImage ? '🖼 IMG' : '🔤 Emoji'}
-          </button>
-          <input style={{ ...s.input, flex: 1 }} placeholder="Title" value={link.title} onChange={e => onUpdate('title', e.target.value)} />
-          <select style={s.select} value={link.badge} onChange={e => onUpdate('badge', e.target.value)}>
-            <option value="">No badge</option>
-            <option value="free">Free</option>
-            <option value="new">New</option>
-            <option value="hot">Hot</option>
-          </select>
+            <button type="button" title="Switch to image icon" style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, whiteSpace: 'nowrap', background: 'transparent', color: 'var(--text2)' }} onClick={() => onUpdate('iconImage', 'https://')}>🔤 Emoji</button>
+            <input style={{ ...s.input, flex: 1 }} placeholder="Title" value={link.title} onChange={e => onUpdate('title', e.target.value)} />
+            <select style={s.select} value={link.badge} onChange={e => onUpdate('badge', e.target.value)}>
+              <option value="">No badge</option>
+              <option value="free">Free</option>
+              <option value="new">New</option>
+              <option value="hot">Hot</option>
+            </select>
+          </div>
+        )}
+
+        {/* Analytics link */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>📊 Analytics:</span>
+          <input
+            readOnly
+            style={{ ...s.input, flex: 1, fontSize: 11, color: 'var(--muted)', cursor: 'pointer', padding: '6px 10px' }}
+            value={`${window.location.origin}/analytics/${link.id}${link.title ? `?title=${encodeURIComponent(link.title)}` : ''}`}
+            onClick={e => { e.currentTarget.select(); navigator.clipboard.writeText(e.currentTarget.value) }}
+            title="Click to copy analytics link"
+          />
         </div>
 
         {/* Row 2: subtitle */}
@@ -862,6 +879,19 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
             fontWeight: copiedLink ? 600 : 400, whiteSpace: 'nowrap',
           }}
         >{copiedLink ? '✓' : '🔗'}</button>
+        <a
+          href={`/analytics/${link.id}${link.title ? `?title=${encodeURIComponent(link.title)}` : ''}`}
+          target="_blank"
+          rel="noopener"
+          title="View analytics"
+          style={{
+            ...s.iconBtn, fontSize: 12, padding: '4px 8px', borderRadius: 6,
+            border: '1px solid var(--border)',
+            background: 'var(--surface2)',
+            color: 'var(--muted)',
+            textDecoration: 'none', textAlign: 'center', display: 'block',
+          }}
+        >📊</a>
         <button style={{ ...s.iconBtn, color: 'var(--red)' }} onClick={() => requestConfirm('Delete this link?', onRemove)}>✕</button>
       </div>
       {ConfirmModal}
@@ -1060,6 +1090,16 @@ function SortableProductRow({ product, update, toggle, remove }) {
             <input type="checkbox" checked={product.featured || false} onChange={e => update('featured', e.target.checked)} />
             ⭐ Featured — dark card + vibrate animation
           </label>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', gridColumn: '1 / -1' }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>📊 Analytics:</span>
+            <input
+              readOnly
+              style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', color: 'var(--muted)', fontSize: 11, outline: 'none', width: '100%', cursor: 'pointer' }}
+              value={`${window.location.origin}/analytics/${product.id}${product.name ? `?title=${encodeURIComponent(product.name)}` : ''}`}
+              onClick={e => { e.currentTarget.select(); navigator.clipboard.writeText(e.currentTarget.value) }}
+              title="Click to copy analytics link"
+            />
+          </div>
         </div>
       )}
       {ConfirmModal}
