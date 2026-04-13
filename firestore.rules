@@ -9,16 +9,16 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Click analytics — anyone can log a click, only authenticated admin can read
+    // Click analytics — anyone can log a click or read (for shareable analytics page)
     match /clicks/{docId} {
       allow create: if true;
-      allow read: if request.auth != null;
+      allow read: if true;
     }
 
-    // Page view analytics — anyone can log a view, only authenticated admin can read
+    // Page view analytics — anyone can log a view or read
     match /pageviews/{docId} {
       allow create: if true;
-      allow read: if request.auth != null;
+      allow read: if true;
     }
 
     // Email subscribers — anyone can subscribe or unsubscribe, only John can read the list
