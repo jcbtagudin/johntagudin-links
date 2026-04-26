@@ -102,6 +102,7 @@ export default function AdminPage() {
   const [saved, setSaved] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+  const previewRef = useRef(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -211,7 +212,7 @@ export default function AdminPage() {
       </aside>
 
       {/* MAIN */}
-      <main style={{ ...s.main, ...(isMobile ? { paddingTop: 56 } : {}) }}>
+      <main style={{ ...s.main, ...(isMobile ? { paddingTop: 56 } : { marginRight: 400 }) }}>
         {/* MOBILE TOP BAR */}
         {isMobile && (
           <div style={s.mobileTopBar}>
@@ -243,6 +244,37 @@ export default function AdminPage() {
           {tab === 'layout'      && <ArrangeTab onSaved={showSaved} />}
         </div>
       </main>
+
+      {/* LIVE PREVIEW PANEL — desktop only */}
+      {!isMobile && (
+        <div style={{
+          position: 'fixed', right: 0, top: 0, bottom: 0, width: 400,
+          background: 'var(--surface)', borderLeft: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', zIndex: 50,
+        }}>
+          <div style={{
+            padding: '12px 16px', borderBottom: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Live Preview</span>
+            <button
+              onClick={() => { if (previewRef.current) previewRef.current.src = previewRef.current.src }}
+              title="Reload preview"
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'var(--muted)', fontSize: 16, padding: '2px 6px', borderRadius: 6,
+                lineHeight: 1,
+              }}
+            >↺</button>
+          </div>
+          <iframe
+            ref={previewRef}
+            src="/"
+            title="Live Preview"
+            style={{ flex: 1, border: 'none', width: '100%' }}
+          />
+        </div>
+      )}
     </div>
   )
 }
