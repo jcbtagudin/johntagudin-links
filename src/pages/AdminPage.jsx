@@ -686,6 +686,18 @@ function LinksTab({ data, save, onSaved }) {
     }
   }
 
+  const moveLink = (fromSectionId, linkId, toSectionId) => {
+    setSections(secs => {
+      const link = secs.find(s => s.id === fromSectionId)?.links.find(l => l.id === linkId)
+      if (!link) return secs
+      return secs.map(sec => {
+        if (sec.id === fromSectionId) return { ...sec, links: sec.links.filter(l => l.id !== linkId) }
+        if (sec.id === toSectionId) return { ...sec, links: [...(sec.links || []), link] }
+        return sec
+      })
+    })
+  }
+
   return (
     <div style={s.tabBody}>
       <div style={s.tabInfo}>Drag sections and links to reorder. Click a section to expand and edit its links.</div>
@@ -705,6 +717,8 @@ function LinksTab({ data, save, onSaved }) {
               onRemoveLink={(lid) => removeLink(sec.id, lid)}
               onUpdateLink={(lid, k, v) => updateLink(sec.id, lid, k, v)}
               onLinkDragEnd={(e) => onLinkDragEnd(sec.id, e)}
+              onMoveLink={(lid, toId) => moveLink(sec.id, lid, toId)}
+              allSections={sections}
               sensors={sensors}
             />
           ))}
@@ -717,7 +731,7 @@ function LinksTab({ data, save, onSaved }) {
   )
 }
 
-function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onToggleVisible, onRemove, onAddLink, onRemoveLink, onUpdateLink, onLinkDragEnd, sensors }) {
+function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onToggleVisible, onRemove, onAddLink, onRemoveLink, onUpdateLink, onLinkDragEnd, onMoveLink, allSections, sensors }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const { requestConfirm, ConfirmModal } = useConfirm()
@@ -753,6 +767,9 @@ function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onTog
                   link={link}
                   onUpdate={(k, v) => onUpdateLink(link.id, k, v)}
                   onRemove={() => onRemoveLink(link.id)}
+                  onMove={(toId) => onMoveLink(link.id, toId)}
+                  allSections={allSections}
+                  currentSectionId={section.id}
                 />
               ))}
             </SortableContext>
@@ -764,7 +781,7 @@ function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onTog
   )
 }
 
-function SortableLinkRow({ link, onUpdate, onRemove }) {
+function SortableLinkRow({ link, onUpdate, onRemove, onMove, allSections, currentSectionId }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [showSchedule, setShowSchedule] = useState(!!(link.startDate || link.endDate))
@@ -842,8 +859,8 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
           <ImageUploadField value={link.thumbnail || ''} onChange={v => onUpdate('thumbnail', v)} path="links" placeholder="Thumbnail image URL (optional)" />
         </div>
 
-        {/* Row 4: checkboxes + schedule toggle */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)' }}>
+        {/* Row 4: checkboxes + schedule toggle + move to section */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
             <input type="checkbox" checked={link.featured} onChange={e => onUpdate('featured', e.target.checked)} />
             Featured
@@ -852,6 +869,18 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
             <input type="checkbox" checked={link.visible} onChange={e => onUpdate('visible', e.target.checked)} />
             Visible
           </label>
+          {allSections?.length > 1 && (
+            <select
+              value=""
+              onChange={e => { if (e.target.value) onMove(e.target.value) }}
+              style={{ ...s.select, fontSize: 11, padding: '4px 8px', width: 'auto', color: 'var(--text2)' }}
+            >
+              <option value="">Move to...</option>
+              {allSections.filter(sec => sec.id !== currentSectionId).map(sec => (
+                <option key={sec.id} value={sec.id}>{sec.label}</option>
+              ))}
+            </select>
+          )}
           <button
             style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, marginLeft: 'auto' }}
             onClick={() => setShowSchedule(v => !v)}
