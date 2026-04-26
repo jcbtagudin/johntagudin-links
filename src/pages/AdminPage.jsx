@@ -2558,12 +2558,11 @@ function SettingsTab({ onSaved }) {
 // ─── ARRANGE TAB ─────────────────────────────────────────────────────────────
 
 const SECTION_LABELS = {
-  products:     '🛍️ Products',
-  email_signup: '✉️ Email Signup',
-  brand_deal:   '🤝 Brand Deal',
-  tools:        '🔧 Tools',
-  featured:     '⭐ Featured',
-  latest_video: '▶️ Latest Video',
+  links:       '🔗 Links',
+  products:    '🛍️ Products',
+  pinned:      '📌 Pinned',
+  subscribers: '👥 Subscribers',
+  reviews:     '⭐ Reviews',
 }
 
 function ArrangeTab({ onSaved }) {
