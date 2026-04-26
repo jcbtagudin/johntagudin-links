@@ -2586,7 +2586,7 @@ function ArrangeTab({ onSaved }) {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           {order.map(id => (
-            <SortableSectionRow key={id} id={id} label={SECTION_LABELS[id] || id} />
+            <SortableArrangeRow key={id} id={id} label={SECTION_LABELS[id] || id} />
           ))}
         </SortableContext>
       </DndContext>
@@ -2595,7 +2595,7 @@ function ArrangeTab({ onSaved }) {
   )
 }
 
-function SortableSectionRow({ id, label }) {
+function SortableArrangeRow({ id, label }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
