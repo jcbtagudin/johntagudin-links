@@ -854,9 +854,23 @@ function SortableLinkRow({ link, onUpdate, onRemove, onMove, allSections, curren
         {/* Row 3b: thumbnail */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {link.thumbnail && (
-            <img src={link.thumbnail} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0 }} onError={e => e.currentTarget.style.display = 'none'} />
+            <img src={link.thumbnail} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0, opacity: link.thumbnailHidden ? 0.3 : 1 }} onError={e => e.currentTarget.style.display = 'none'} />
           )}
           <ImageUploadField value={link.thumbnail || ''} onChange={v => onUpdate('thumbnail', v)} path="links" placeholder="Thumbnail image URL (optional)" />
+          {link.thumbnail && (
+            <button
+              onClick={() => onUpdate('thumbnailHidden', !link.thumbnailHidden)}
+              title={link.thumbnailHidden ? 'Show thumbnail' : 'Hide thumbnail'}
+              style={{
+                ...s.iconBtn, fontSize: 12, padding: '4px 8px', borderRadius: 6,
+                border: '1px solid var(--border)', flexShrink: 0,
+                color: link.thumbnailHidden ? 'var(--muted)' : 'var(--accent)',
+                background: link.thumbnailHidden ? 'var(--surface2)' : 'rgba(74,124,64,0.08)',
+              }}
+            >
+              {link.thumbnailHidden ? '🚫' : '👁'}
+            </button>
+          )}
         </div>
 
         {/* Row 4: checkboxes + schedule toggle + move to section */}
