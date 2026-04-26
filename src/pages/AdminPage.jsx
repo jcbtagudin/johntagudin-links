@@ -1266,7 +1266,25 @@ function PinnedTab({ onSaved }) {
 
       <Field label="SUBTITLE" value={form.subtitle} onChange={v => set('subtitle', v)} placeholder="e.g. Watch my latest video on AI tools" />
       <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />
-      <ImageUploadField label="THUMBNAIL IMAGE" value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} path="pinned" placeholder="https://... or upload" />
+      <div style={s.field}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <label style={s.label}>THUMBNAIL IMAGE</label>
+          {form.thumbnailUrl && (
+            <button
+              onClick={() => set('thumbnailHidden', !form.thumbnailHidden)}
+              style={{
+                ...s.iconBtn, fontSize: 11, padding: '3px 10px',
+                border: '1px solid var(--border)', borderRadius: 6,
+                color: form.thumbnailHidden ? 'var(--muted)' : 'var(--accent)',
+                background: form.thumbnailHidden ? 'var(--surface2)' : 'rgba(74,124,64,0.08)',
+              }}
+            >
+              {form.thumbnailHidden ? '🚫 Hidden' : '👁 Visible'}
+            </button>
+          )}
+        </div>
+        <ImageUploadField value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} path="pinned" placeholder="https://... or upload" />
+      </div>
 
       {/* Label text */}
       <Field label='LABEL TEXT (shown above card, default "Pinned")' value={form.pinnedLabel || ''} onChange={v => set('pinnedLabel', v)} placeholder="Pinned" />

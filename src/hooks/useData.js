@@ -104,6 +104,7 @@ const DEFAULT_PINNED = {
   thumbnailUrl: '',
   bgColor: '',
   pinnedLabel: '',
+  thumbnailHidden: false,
 }
 
 export function usePinned() {

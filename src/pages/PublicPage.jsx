@@ -177,7 +177,7 @@ export default function PublicPage() {
                 style={pinned.bgColor ? { background: pinned.bgColor } : undefined}
                 onClick={() => logClick('pinned', pinned.title, 'pinned', meta)}
               >
-                {pinned.thumbnailUrl && (
+                {pinned.thumbnailUrl && !pinned.thumbnailHidden && (
                   <div className={styles.pinnedThumb}>
                     <img src={pinned.thumbnailUrl} alt={pinned.title} onError={e => e.target.style.display = 'none'} />
                   </div>
