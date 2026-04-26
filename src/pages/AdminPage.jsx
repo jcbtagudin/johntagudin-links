@@ -146,7 +146,6 @@ export default function AdminPage() {
     { id: 'email',       label: '✉️ Email' },
     { id: 'analytics',   label: '📊 Analytics' },
     { id: 'reviews',     label: '⭐ Reviews' },
-    { id: 'settings',    label: '⚙️ Settings' },
     { id: 'layout',      label: '🔀 Arrange' },
   ]
 
@@ -154,7 +153,7 @@ export default function AdminPage() {
     profile: 'Profile Settings', socials: 'Social Links', links: 'Link Sections',
     products: 'Gumroad Products', pinned: 'Pinned Link', subscribers: 'Subscribers',
     email: 'Welcome Email', analytics: 'Click Analytics', reviews: 'Reviews',
-    settings: 'Settings', layout: 'Arrange Sections',
+    layout: 'Arrange Sections',
   }
 
   return (
@@ -240,7 +239,6 @@ export default function AdminPage() {
           {tab === 'email'       && <EmailTab onSaved={showSaved} />}
           {tab === 'analytics'   && <AnalyticsTab />}
           {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
-          {tab === 'settings'    && <SettingsTab onSaved={showSaved} />}
           {tab === 'layout'      && <ArrangeTab onSaved={showSaved} />}
         </div>
       </main>
@@ -295,7 +293,11 @@ function useLatestVideoPreview() {
 function ProfileTab({ profile, update, onSaved }) {
   const [form, setForm] = useState({ ...profile })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-  const save = async () => { await update(form); onSaved() }
+  const { settings, save: saveSettings } = useSettings()
+  const [settingsForm, setSettingsForm] = useState(null)
+  useEffect(() => { if (settings && !settingsForm) setSettingsForm({ ...settings }) }, [settings]) // eslint-disable-line react-hooks/exhaustive-deps
+  const setSetting = (k, v) => setSettingsForm(f => ({ ...f, [k]: v }))
+  const save = async () => { await Promise.all([update(form), settingsForm && saveSettings(settingsForm)]); onSaved() }
   const video = useLatestVideoPreview()
 
   return (
@@ -559,6 +561,51 @@ function ProfileTab({ profile, update, onSaved }) {
           </>
         )}
       </div>
+
+      {/* ── Maintenance Mode ── */}
+      {settingsForm && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>🚧 Maintenance Mode</div>
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Enable Maintenance Mode</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>Visitors see a maintenance page instead of your links. Admin still works.</div>
+              </div>
+              <button
+                onClick={() => setSetting('maintenanceMode', !settingsForm.maintenanceMode)}
+                style={{
+                  position: 'relative', width: 48, height: 26, borderRadius: 13,
+                  border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 16,
+                  background: settingsForm.maintenanceMode ? 'var(--accent)' : 'var(--border)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 3, width: 20, height: 20,
+                  borderRadius: '50%', background: '#fff',
+                  left: settingsForm.maintenanceMode ? 25 : 3,
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+                }} />
+              </button>
+            </div>
+            {settingsForm.maintenanceMode && (
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+                ⚠️ Maintenance mode is ON — your public page is hidden from visitors.
+              </div>
+            )}
+            <div style={s.field}>
+              <label style={s.label}>Maintenance Title</label>
+              <input style={s.input} value={settingsForm.maintenanceTitle || ''} onChange={e => setSetting('maintenanceTitle', e.target.value)} placeholder="Under Maintenance" />
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Maintenance Message</label>
+              <textarea style={{ ...s.input, minHeight: 80, resize: 'vertical' }} value={settingsForm.maintenanceMessage || ''} onChange={e => setSetting('maintenanceMessage', e.target.value)} placeholder="We'll be back shortly. Thanks for your patience!" />
+            </div>
+          </div>
+        </div>
+      )}
 
       <SaveBtn onClick={save} />
     </div>
