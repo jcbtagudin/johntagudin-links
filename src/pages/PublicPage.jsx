@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView, useApprovedReviews, submitReview, useSectionOrder } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView, useApprovedReviews, submitReview, useSectionOrder, DEFAULT_SECTIONS } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
-
-const DEFAULT_SECTION_ORDER = ['links', 'products', 'pinned', 'subscribers', 'reviews']
 
 const BADGE_MAP = {
   free: { label: 'Free', cls: 'badgeFree' },
@@ -81,7 +79,7 @@ export default function PublicPage() {
   const { data, loading: ll } = useLinks()
   const { pinned, loading: pinnedLoading } = usePinned()
   const { products, loading: productsLoading } = useProducts()
-  const { sectionOrder } = useSectionOrder()
+  const { sections } = useSectionOrder()
   const cursorActive = useCursorHint()
   const meta = useVisitorMeta()
 
@@ -107,63 +105,124 @@ export default function PublicPage() {
     </div>
   ) : null
 
-  const renderSection = (id) => {
-    switch (id) {
+  const renderSection = (section) => {
+    switch (section.type) {
       case 'links': {
-        const sections = data.sections?.filter(s => s.visible) || []
-        const rendered = sections.map(section => {
-          const visibleLinks = section.links?.filter(l => l.visible && isLinkLive(l)) || []
-          if (!visibleLinks.length) return null
-          return (
-            <div key={section.id} className={styles.section}>
-              <div className={styles.sectionLabel}>{section.label}</div>
-              <div className={styles.linksStack}>
-                {visibleLinks.map(link => {
-                  const badge = BADGE_MAP[link.badge]
-                  return (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener"
-                      className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
-                      onClick={() => logClick(link.id, link.title, section.id, meta)}
-                    >
-                      {link.thumbnail && !link.thumbnailHidden && (
-                        <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
-                      )}
-                      <div className={styles.cardRow}>
-                        <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
-                          {link.iconImage
-                            ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
-                            : link.icon}
-                        </div>
-                        <div className={styles.cardText}>
-                          <div className={styles.cardTitle}>{link.title}</div>
-                          <div className={styles.cardSub}>{link.subtitle}</div>
-                        </div>
-                        {badge && (
-                          <span className={`${styles.badge} ${styles[badge.cls]}`}>
-                            {badge.label}
-                          </span>
+        if (section.isBuiltin !== false) {
+          // Built-in: render all global link sections
+          const linkSections = data.sections?.filter(s => s.visible) || []
+          const rendered = linkSections.map(ls => {
+            const visibleLinks = ls.links?.filter(l => l.visible && isLinkLive(l)) || []
+            if (!visibleLinks.length) return null
+            return (
+              <div key={ls.id} className={styles.section}>
+                <div className={styles.sectionLabel}>{ls.label}</div>
+                <div className={styles.linksStack}>
+                  {visibleLinks.map(link => {
+                    const badge = BADGE_MAP[link.badge]
+                    return (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener"
+                        className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
+                        onClick={() => logClick(link.id, link.title, ls.id, meta)}
+                      >
+                        {link.thumbnail && !link.thumbnailHidden && (
+                          <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
                         )}
-                        <Arrow />
-                      </div>
-                    </a>
-                  )
-                })}
+                        <div className={styles.cardRow}>
+                          <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
+                            {link.iconImage
+                              ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                              : link.icon}
+                          </div>
+                          <div className={styles.cardText}>
+                            <div className={styles.cardTitle}>{link.title}</div>
+                            <div className={styles.cardSub}>{link.subtitle}</div>
+                          </div>
+                          {badge && (
+                            <span className={`${styles.badge} ${styles[badge.cls]}`}>
+                              {badge.label}
+                            </span>
+                          )}
+                          <Arrow />
+                        </div>
+                      </a>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )
-        }).filter(Boolean)
-        return rendered.length ? <React.Fragment key="links">{rendered}</React.Fragment> : null
+            )
+          }).filter(Boolean)
+          return rendered.length ? <React.Fragment key={section.id}>{rendered}</React.Fragment> : null
+        } else {
+          // Non-builtin: render section.sections embedded data (same structure as built-in)
+          const linkSections2 = (section.sections || []).filter(s => s.visible !== false)
+          const rendered2 = linkSections2.map(ls => {
+            const visibleLinks = ls.links?.filter(l => l.visible && isLinkLive(l)) || []
+            if (!visibleLinks.length) return null
+            return (
+              <div key={ls.id} className={styles.section}>
+                <div className={styles.sectionLabel}>{ls.label}</div>
+                <div className={styles.linksStack}>
+                  {visibleLinks.map(link => {
+                    const badge = BADGE_MAP[link.badge]
+                    return (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener"
+                        className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
+                        onClick={() => logClick(link.id, link.title, ls.id, meta)}
+                      >
+                        {link.thumbnail && !link.thumbnailHidden && (
+                          <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
+                        )}
+                        <div className={styles.cardRow}>
+                          <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
+                            {link.iconImage
+                              ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                              : link.icon}
+                          </div>
+                          <div className={styles.cardText}>
+                            <div className={styles.cardTitle}>{link.title}</div>
+                            <div className={styles.cardSub}>{link.subtitle}</div>
+                          </div>
+                          {badge && (
+                            <span className={`${styles.badge} ${styles[badge.cls]}`}>{badge.label}</span>
+                          )}
+                          <Arrow />
+                        </div>
+                      </a>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          }).filter(Boolean)
+          return rendered2.length ? <React.Fragment key={section.id}>{rendered2}</React.Fragment> : null
+        }
       }
       case 'products':
-        return <ProductsSection key="products" products={products} styles={styles} />
+        if (section.isBuiltin !== false) {
+          return <ProductsSection key={section.id} products={products} styles={styles} />
+        } else {
+          // Non-builtin: reuse ProductsSection with embedded items
+          const embeddedProducts = {
+            items: section.items || [],
+            layout: section.layout || 'rows',
+            title: section.title || '',
+          }
+          if (!embeddedProducts.items.filter(p => p.visible !== false).length) return null
+          return <ProductsSection key={section.id} products={embeddedProducts} styles={styles} />
+        }
       case 'pinned':
         if (!pinned?.enabled || !pinned?.url) return null
         return (
-          <div key="pinned" className={styles.pinnedSection}>
+          <div key={section.id} className={styles.pinnedSection}>
             <div className={styles.pinnedLabel}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign:'middle',marginRight:5}}><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
               {pinned.pinnedLabel || 'Pinned'}
@@ -204,12 +263,37 @@ export default function PublicPage() {
             {cursorActive && <CursorHint />}
           </div>
         )
+      case 'newsletter':
       case 'subscribers':
         if (profile.showEmailCapture !== true) return null
-        return <EmailCaptureCard key="subscribers" profile={profile} />
+        return <EmailCaptureCard key={section.id} profile={profile} />
       case 'reviews':
-        if (profile.showReviews !== true) return null
-        return <ReviewsSection key="reviews" />
+        return <ReviewsSection key={section.id} />
+      case 'custom': {
+        if (!section.customUrl && !section.customTitle) return null
+        return (
+          <div key={section.id} className={styles.section}>
+            <div className={styles.linksStack}>
+              <a
+                href={section.customUrl || '#'}
+                target="_blank"
+                rel="noopener"
+                className={styles.card}
+                onClick={() => logClick(section.id, section.customTitle, 'custom', meta)}
+              >
+                <div className={styles.cardRow}>
+                  <div className={styles.icon}>{section.customIcon || '🔗'}</div>
+                  <div className={styles.cardText}>
+                    <div className={styles.cardTitle}>{section.customTitle}</div>
+                    {section.customSubtitle && <div className={styles.cardSub}>{section.customSubtitle}</div>}
+                  </div>
+                  <Arrow />
+                </div>
+              </a>
+            </div>
+          </div>
+        )
+      }
       default:
         return null
     }
@@ -267,7 +351,7 @@ export default function PublicPage() {
         )}
 
         {/* ORDERABLE SECTIONS */}
-        {(sectionOrder || DEFAULT_SECTION_ORDER).map(id => renderSection(id))}
+        {(sections || DEFAULT_SECTIONS).filter(s => s.visible).map(s => renderSection(s))}
 
         {/* SOCIALS — bottom position */}
         {socialsBottom && SocialsBar}
