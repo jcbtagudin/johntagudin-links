@@ -102,6 +102,9 @@ const DEFAULT_PINNED = {
   url: '',
   badge: '',
   thumbnailUrl: '',
+  bgColor: '',
+  pinnedLabel: '',
+  thumbnailHidden: false,
 }
 
 export function usePinned() {
@@ -447,4 +450,28 @@ export function useSettings() {
   }
 
   return { settings, loading, save }
+}
+
+// ─── SECTION ORDER ────────────────────────────────────────────────────────────
+
+const DEFAULT_SECTION_ORDER = ['links', 'products', 'pinned', 'subscribers', 'reviews']
+
+export function useSectionOrder() {
+  const [sectionOrder, setSectionOrder] = useState(DEFAULT_SECTION_ORDER)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const ref = doc(db, 'config', 'layout')
+    const unsub = onSnapshot(ref, snap => {
+      if (snap.exists()) setSectionOrder(snap.data().sectionOrder || DEFAULT_SECTION_ORDER)
+      setLoading(false)
+    })
+    return unsub
+  }, [])
+
+  const save = async (order) => {
+    await setDoc(doc(db, 'config', 'layout'), { sectionOrder: order })
+  }
+
+  return { sectionOrder, loading, save }
 }

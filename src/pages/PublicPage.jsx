@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView, useApprovedReviews, submitReview } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView, useApprovedReviews, submitReview, useSectionOrder } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
+
+const DEFAULT_SECTION_ORDER = ['links', 'products', 'pinned', 'subscribers', 'reviews']
 
 const BADGE_MAP = {
   free: { label: 'Free', cls: 'badgeFree' },
@@ -79,6 +81,7 @@ export default function PublicPage() {
   const { data, loading: ll } = useLinks()
   const { pinned, loading: pinnedLoading } = usePinned()
   const { products, loading: productsLoading } = useProducts()
+  const { sectionOrder } = useSectionOrder()
   const cursorActive = useCursorHint()
   const meta = useVisitorMeta()
 
@@ -103,6 +106,114 @@ export default function PublicPage() {
       ))}
     </div>
   ) : null
+
+  const renderSection = (id) => {
+    switch (id) {
+      case 'links': {
+        const sections = data.sections?.filter(s => s.visible) || []
+        const rendered = sections.map(section => {
+          const visibleLinks = section.links?.filter(l => l.visible && isLinkLive(l)) || []
+          if (!visibleLinks.length) return null
+          return (
+            <div key={section.id} className={styles.section}>
+              <div className={styles.sectionLabel}>{section.label}</div>
+              <div className={styles.linksStack}>
+                {visibleLinks.map(link => {
+                  const badge = BADGE_MAP[link.badge]
+                  return (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener"
+                      className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
+                      onClick={() => logClick(link.id, link.title, section.id, meta)}
+                    >
+                      {link.thumbnail && !link.thumbnailHidden && (
+                        <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
+                      )}
+                      <div className={styles.cardRow}>
+                        <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
+                          {link.iconImage
+                            ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                            : link.icon}
+                        </div>
+                        <div className={styles.cardText}>
+                          <div className={styles.cardTitle}>{link.title}</div>
+                          <div className={styles.cardSub}>{link.subtitle}</div>
+                        </div>
+                        {badge && (
+                          <span className={`${styles.badge} ${styles[badge.cls]}`}>
+                            {badge.label}
+                          </span>
+                        )}
+                        <Arrow />
+                      </div>
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        }).filter(Boolean)
+        return rendered.length ? <React.Fragment key="links">{rendered}</React.Fragment> : null
+      }
+      case 'products':
+        return <ProductsSection key="products" products={products} styles={styles} />
+      case 'pinned':
+        if (!pinned?.enabled || !pinned?.url) return null
+        return (
+          <div key="pinned" className={styles.pinnedSection}>
+            <div className={styles.pinnedLabel}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign:'middle',marginRight:5}}><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
+              {pinned.pinnedLabel || 'Pinned'}
+            </div>
+            <div className={`${styles.pinnedGlowWrap} ${cursorActive ? styles.pinnedGlowBounce : ''}`}>
+              <a
+                href={pinned.url}
+                target="_blank"
+                rel="noopener"
+                className={styles.pinnedCard}
+                style={pinned.bgColor ? { background: pinned.bgColor } : undefined}
+                onClick={() => logClick('pinned', pinned.title, 'pinned', meta)}
+              >
+                {pinned.thumbnailUrl && !pinned.thumbnailHidden && (
+                  <div className={styles.pinnedThumb}>
+                    <img src={pinned.thumbnailUrl} alt={pinned.title} onError={e => e.target.style.display = 'none'} />
+                  </div>
+                )}
+                <div className={styles.pinnedCardBody}>
+                  <div className={`${styles.icon} ${pinned.iconUrl ? styles.iconImg : styles.iconAccent}`}>
+                    {pinned.iconUrl
+                      ? <img src={pinned.iconUrl} alt="" onError={e => e.target.style.display = 'none'} />
+                      : pinned.icon}
+                  </div>
+                  <div className={styles.cardText}>
+                    <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
+                    <div className={`${styles.cardSub} ${styles.pinnedSub}`}>{pinned.subtitle}</div>
+                  </div>
+                  {BADGE_MAP[pinned.badge] && (
+                    <span className={`${styles.badge} ${styles.pinnedBadge}`}>
+                      {BADGE_MAP[pinned.badge].label}
+                    </span>
+                  )}
+                  <Arrow />
+                </div>
+              </a>
+            </div>
+            {cursorActive && <CursorHint />}
+          </div>
+        )
+      case 'subscribers':
+        if (profile.showEmailCapture !== true) return null
+        return <EmailCaptureCard key="subscribers" profile={profile} />
+      case 'reviews':
+        if (profile.showReviews !== true) return null
+        return <ReviewsSection key="reviews" />
+      default:
+        return null
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -155,121 +266,11 @@ export default function PublicPage() {
           <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />
         )}
 
-        {/* PINNED LINK */}
-        {pinned?.enabled && pinned?.url && (
-          <div className={styles.pinnedSection}>
-            <div className={styles.pinnedLabel}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign:'middle',marginRight:5}}><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
-              Pinned
-            </div>
-            <div className={`${styles.pinnedGlowWrap} ${cursorActive ? styles.pinnedGlowBounce : ''}`}>
-
-              <a
-                href={pinned.url}
-                target="_blank"
-                rel="noopener"
-                className={styles.pinnedCard}
-                onClick={() => logClick('pinned', pinned.title, 'pinned', meta)}
-              >
-                {pinned.thumbnailUrl && (
-                  <div className={styles.pinnedThumb}>
-                    <img
-                      src={pinned.thumbnailUrl}
-                      alt={pinned.title}
-                      onError={e => e.target.style.display = 'none'}
-                    />
-                  </div>
-                )}
-                <div className={styles.pinnedCardBody}>
-                  <div className={`${styles.icon} ${pinned.iconUrl ? styles.iconImg : styles.iconAccent}`}>
-                    {pinned.iconUrl
-                      ? <img src={pinned.iconUrl} alt="" onError={e => e.target.style.display = 'none'} />
-                      : pinned.icon}
-                  </div>
-                  <div className={styles.cardText}>
-                    <div className={`${styles.cardTitle} ${styles.pinnedTitle}`}>{pinned.title}</div>
-                    <div className={`${styles.cardSub} ${styles.pinnedSub}`}>{pinned.subtitle}</div>
-                  </div>
-                  {BADGE_MAP[pinned.badge] && (
-                    <span className={`${styles.badge} ${styles.pinnedBadge}`}>
-                      {BADGE_MAP[pinned.badge].label}
-                    </span>
-                  )}
-                  <Arrow />
-                </div>
-              </a>
-            </div>
-            {cursorActive && <CursorHint />}
-          </div>
-        )}
-
-        {/* PRODUCTS */}
-        <ProductsSection products={products} styles={styles} />
-
-        {/* SECTIONS */}
-        {visibleSections.map(section => {
-          const visibleLinks = section.links?.filter(l => l.visible && isLinkLive(l)) || []
-          if (!visibleLinks.length) return null
-          return (
-            <div key={section.id} className={styles.section}>
-              <div className={styles.sectionLabel}>{section.label}</div>
-              <div className={styles.linksStack}>
-                {visibleLinks.map(link => {
-                  const badge = BADGE_MAP[link.badge]
-                  return (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener"
-                      className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
-                      onClick={() => logClick(link.id, link.title, section.id, meta)}
-                    >
-                      {link.thumbnail && (
-                        <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
-                      )}
-                      <div className={styles.cardRow}>
-                        <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
-                          {link.iconImage
-                            ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
-                            : link.icon}
-                        </div>
-                        <div className={styles.cardText}>
-                          <div className={styles.cardTitle}>{link.title}</div>
-                          <div className={styles.cardSub}>{link.subtitle}</div>
-                        </div>
-                        {badge && (
-                          <span className={`${styles.badge} ${styles[badge.cls]}`}>
-                            {badge.label}
-                          </span>
-                        )}
-                        <Arrow />
-                      </div>
-                    </a>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-
-        {/* LATEST VIDEO — bottom position */}
-        {profile.showLatestVideo !== false && profile.latestVideoPosition === 'bottom' && (
-          <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />
-        )}
-
-        {/* EMAIL CAPTURE */}
-        {profile.showEmailCapture === true && (
-          <EmailCaptureCard profile={profile} />
-        )}
+        {/* ORDERABLE SECTIONS */}
+        {(sectionOrder || DEFAULT_SECTION_ORDER).map(id => renderSection(id))}
 
         {/* SOCIALS — bottom position */}
         {socialsBottom && SocialsBar}
-
-        {/* REVIEWS */}
-        {profile.showReviews === true && (
-          <ReviewsSection />
-        )}
 
         {/* FOOTER */}
         <div className={styles.footer}>

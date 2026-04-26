@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, storage } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews, useSettings, removeSubscriber } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews, useSettings, useSectionOrder, removeSubscriber } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -102,6 +102,7 @@ export default function AdminPage() {
   const [saved, setSaved] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+  const previewRef = useRef(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -145,14 +146,14 @@ export default function AdminPage() {
     { id: 'email',       label: '✉️ Email' },
     { id: 'analytics',   label: '📊 Analytics' },
     { id: 'reviews',     label: '⭐ Reviews' },
-    { id: 'settings',    label: '⚙️ Settings' },
+    { id: 'layout',      label: '🔀 Arrange' },
   ]
 
   const TAB_TITLES = {
     profile: 'Profile Settings', socials: 'Social Links', links: 'Link Sections',
     products: 'Gumroad Products', pinned: 'Pinned Link', subscribers: 'Subscribers',
     email: 'Welcome Email', analytics: 'Click Analytics', reviews: 'Reviews',
-    settings: 'Settings',
+    layout: 'Arrange Sections',
   }
 
   return (
@@ -210,7 +211,7 @@ export default function AdminPage() {
       </aside>
 
       {/* MAIN */}
-      <main style={{ ...s.main, ...(isMobile ? { paddingTop: 56 } : {}) }}>
+      <main style={{ ...s.main, ...(isMobile ? { paddingTop: 56 } : { marginRight: 400 }) }}>
         {/* MOBILE TOP BAR */}
         {isMobile && (
           <div style={s.mobileTopBar}>
@@ -238,9 +239,40 @@ export default function AdminPage() {
           {tab === 'email'       && <EmailTab onSaved={showSaved} />}
           {tab === 'analytics'   && <AnalyticsTab />}
           {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
-          {tab === 'settings'    && <SettingsTab onSaved={showSaved} />}
+          {tab === 'layout'      && <ArrangeTab onSaved={showSaved} />}
         </div>
       </main>
+
+      {/* LIVE PREVIEW PANEL — desktop only */}
+      {!isMobile && (
+        <div style={{
+          position: 'fixed', right: 0, top: 0, bottom: 0, width: 400,
+          background: 'var(--surface)', borderLeft: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', zIndex: 50,
+        }}>
+          <div style={{
+            padding: '12px 16px', borderBottom: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Live Preview</span>
+            <button
+              onClick={() => { if (previewRef.current) previewRef.current.src = previewRef.current.src }}
+              title="Reload preview"
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'var(--muted)', fontSize: 16, padding: '2px 6px', borderRadius: 6,
+                lineHeight: 1,
+              }}
+            >↺</button>
+          </div>
+          <iframe
+            ref={previewRef}
+            src="/"
+            title="Live Preview"
+            style={{ flex: 1, border: 'none', width: '100%' }}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -261,7 +293,11 @@ function useLatestVideoPreview() {
 function ProfileTab({ profile, update, onSaved }) {
   const [form, setForm] = useState({ ...profile })
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-  const save = async () => { await update(form); onSaved() }
+  const { settings, save: saveSettings } = useSettings()
+  const [settingsForm, setSettingsForm] = useState(null)
+  useEffect(() => { if (settings && !settingsForm) setSettingsForm({ ...settings }) }, [settings]) // eslint-disable-line react-hooks/exhaustive-deps
+  const setSetting = (k, v) => setSettingsForm(f => ({ ...f, [k]: v }))
+  const save = async () => { await Promise.all([update(form), settingsForm && saveSettings(settingsForm)]); onSaved() }
   const video = useLatestVideoPreview()
 
   return (
@@ -526,6 +562,51 @@ function ProfileTab({ profile, update, onSaved }) {
         )}
       </div>
 
+      {/* ── Maintenance Mode ── */}
+      {settingsForm && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>🚧 Maintenance Mode</div>
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Enable Maintenance Mode</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>Visitors see a maintenance page instead of your links. Admin still works.</div>
+              </div>
+              <button
+                onClick={() => setSetting('maintenanceMode', !settingsForm.maintenanceMode)}
+                style={{
+                  position: 'relative', width: 48, height: 26, borderRadius: 13,
+                  border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 16,
+                  background: settingsForm.maintenanceMode ? 'var(--accent)' : 'var(--border)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 3, width: 20, height: 20,
+                  borderRadius: '50%', background: '#fff',
+                  left: settingsForm.maintenanceMode ? 25 : 3,
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+                }} />
+              </button>
+            </div>
+            {settingsForm.maintenanceMode && (
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+                ⚠️ Maintenance mode is ON — your public page is hidden from visitors.
+              </div>
+            )}
+            <div style={s.field}>
+              <label style={s.label}>Maintenance Title</label>
+              <input style={s.input} value={settingsForm.maintenanceTitle || ''} onChange={e => setSetting('maintenanceTitle', e.target.value)} placeholder="Under Maintenance" />
+            </div>
+            <div style={s.field}>
+              <label style={s.label}>Maintenance Message</label>
+              <textarea style={{ ...s.input, minHeight: 80, resize: 'vertical' }} value={settingsForm.maintenanceMessage || ''} onChange={e => setSetting('maintenanceMessage', e.target.value)} placeholder="We'll be back shortly. Thanks for your patience!" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <SaveBtn onClick={save} />
     </div>
   )
@@ -652,6 +733,18 @@ function LinksTab({ data, save, onSaved }) {
     }
   }
 
+  const moveLink = (fromSectionId, linkId, toSectionId) => {
+    setSections(secs => {
+      const link = secs.find(s => s.id === fromSectionId)?.links.find(l => l.id === linkId)
+      if (!link) return secs
+      return secs.map(sec => {
+        if (sec.id === fromSectionId) return { ...sec, links: sec.links.filter(l => l.id !== linkId) }
+        if (sec.id === toSectionId) return { ...sec, links: [...(sec.links || []), link] }
+        return sec
+      })
+    })
+  }
+
   return (
     <div style={s.tabBody}>
       <div style={s.tabInfo}>Drag sections and links to reorder. Click a section to expand and edit its links.</div>
@@ -671,6 +764,8 @@ function LinksTab({ data, save, onSaved }) {
               onRemoveLink={(lid) => removeLink(sec.id, lid)}
               onUpdateLink={(lid, k, v) => updateLink(sec.id, lid, k, v)}
               onLinkDragEnd={(e) => onLinkDragEnd(sec.id, e)}
+              onMoveLink={(lid, toId) => moveLink(sec.id, lid, toId)}
+              allSections={sections}
               sensors={sensors}
             />
           ))}
@@ -683,7 +778,7 @@ function LinksTab({ data, save, onSaved }) {
   )
 }
 
-function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onToggleVisible, onRemove, onAddLink, onRemoveLink, onUpdateLink, onLinkDragEnd, sensors }) {
+function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onToggleVisible, onRemove, onAddLink, onRemoveLink, onUpdateLink, onLinkDragEnd, onMoveLink, allSections, sensors }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const { requestConfirm, ConfirmModal } = useConfirm()
@@ -719,6 +814,9 @@ function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onTog
                   link={link}
                   onUpdate={(k, v) => onUpdateLink(link.id, k, v)}
                   onRemove={() => onRemoveLink(link.id)}
+                  onMove={(toId) => onMoveLink(link.id, toId)}
+                  allSections={allSections}
+                  currentSectionId={section.id}
                 />
               ))}
             </SortableContext>
@@ -730,7 +828,7 @@ function SortableSectionRow({ section, expanded, onToggleExpand, onUpdate, onTog
   )
 }
 
-function SortableLinkRow({ link, onUpdate, onRemove }) {
+function SortableLinkRow({ link, onUpdate, onRemove, onMove, allSections, currentSectionId }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   const [showSchedule, setShowSchedule] = useState(!!(link.startDate || link.endDate))
@@ -803,13 +901,27 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
         {/* Row 3b: thumbnail */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {link.thumbnail && (
-            <img src={link.thumbnail} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0 }} onError={e => e.currentTarget.style.display = 'none'} />
+            <img src={link.thumbnail} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', flexShrink: 0, opacity: link.thumbnailHidden ? 0.3 : 1 }} onError={e => e.currentTarget.style.display = 'none'} />
           )}
           <ImageUploadField value={link.thumbnail || ''} onChange={v => onUpdate('thumbnail', v)} path="links" placeholder="Thumbnail image URL (optional)" />
+          {link.thumbnail && (
+            <button
+              onClick={() => onUpdate('thumbnailHidden', !link.thumbnailHidden)}
+              title={link.thumbnailHidden ? 'Show thumbnail' : 'Hide thumbnail'}
+              style={{
+                ...s.iconBtn, fontSize: 12, padding: '4px 8px', borderRadius: 6,
+                border: '1px solid var(--border)', flexShrink: 0,
+                color: link.thumbnailHidden ? 'var(--muted)' : 'var(--accent)',
+                background: link.thumbnailHidden ? 'var(--surface2)' : 'rgba(74,124,64,0.08)',
+              }}
+            >
+              {link.thumbnailHidden ? '🚫' : '👁'}
+            </button>
+          )}
         </div>
 
-        {/* Row 4: checkboxes + schedule toggle */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)' }}>
+        {/* Row 4: checkboxes + schedule toggle + move to section */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 12, color: 'var(--text2)', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
             <input type="checkbox" checked={link.featured} onChange={e => onUpdate('featured', e.target.checked)} />
             Featured
@@ -818,6 +930,18 @@ function SortableLinkRow({ link, onUpdate, onRemove }) {
             <input type="checkbox" checked={link.visible} onChange={e => onUpdate('visible', e.target.checked)} />
             Visible
           </label>
+          {allSections?.length > 1 && (
+            <select
+              value=""
+              onChange={e => { if (e.target.value) onMove(e.target.value) }}
+              style={{ ...s.select, fontSize: 11, padding: '4px 8px', width: 'auto', color: 'var(--text2)' }}
+            >
+              <option value="">Move to...</option>
+              {allSections.filter(sec => sec.id !== currentSectionId).map(sec => (
+                <option key={sec.id} value={sec.id}>{sec.label}</option>
+              ))}
+            </select>
+          )}
           <button
             style={{ ...s.iconBtn, fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 6, marginLeft: 'auto' }}
             onClick={() => setShowSchedule(v => !v)}
@@ -1203,7 +1327,74 @@ function PinnedTab({ onSaved }) {
 
       <Field label="SUBTITLE" value={form.subtitle} onChange={v => set('subtitle', v)} placeholder="e.g. Watch my latest video on AI tools" />
       <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />
-      <ImageUploadField label="THUMBNAIL IMAGE" value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} path="pinned" placeholder="https://... or upload" />
+      <div style={s.field}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <label style={s.label}>THUMBNAIL IMAGE</label>
+          {form.thumbnailUrl && (
+            <button
+              onClick={() => set('thumbnailHidden', !form.thumbnailHidden)}
+              style={{
+                ...s.iconBtn, fontSize: 11, padding: '3px 10px',
+                border: '1px solid var(--border)', borderRadius: 6,
+                color: form.thumbnailHidden ? 'var(--muted)' : 'var(--accent)',
+                background: form.thumbnailHidden ? 'var(--surface2)' : 'rgba(74,124,64,0.08)',
+              }}
+            >
+              {form.thumbnailHidden ? '🚫 Hidden' : '👁 Visible'}
+            </button>
+          )}
+        </div>
+        <ImageUploadField value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} path="pinned" placeholder="https://... or upload" />
+      </div>
+
+      {/* Label text */}
+      <Field label='LABEL TEXT (shown above card, default "Pinned")' value={form.pinnedLabel || ''} onChange={v => set('pinnedLabel', v)} placeholder="Pinned" />
+
+      {/* Card background color */}
+      {(() => {
+        const PINNED_COLORS = [
+          { label: 'Deep Black',    value: '#1A1A1A' },
+          { label: 'Midnight Navy', value: '#0D1B2A' },
+          { label: 'Deep Purple',   value: '#1A0A2E' },
+          { label: 'Forest Dark',   value: '#0A1F12' },
+          { label: 'Deep Crimson',  value: '#1F0A0A' },
+        ]
+        const isPreset = PINNED_COLORS.some(c => c.value === form.bgColor)
+        const activeColor = form.bgColor || '#1A1A1A'
+        return (
+          <div style={s.field}>
+            <label style={s.label}>CARD BACKGROUND</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {PINNED_COLORS.map(c => (
+                <button
+                  key={c.value}
+                  title={c.label}
+                  onClick={() => set('bgColor', c.value)}
+                  style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: c.value, cursor: 'pointer', flexShrink: 0,
+                    border: activeColor === c.value ? '2.5px solid var(--accent)' : '2px solid var(--border)',
+                    transition: 'border-color 0.15s',
+                  }}
+                />
+              ))}
+              <label title="Custom color" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input
+                  type="color"
+                  value={isPreset || !form.bgColor ? '#1A1A1A' : form.bgColor}
+                  onChange={e => set('bgColor', e.target.value)}
+                  style={{
+                    width: 36, height: 36, borderRadius: 10, cursor: 'pointer',
+                    border: !isPreset && form.bgColor ? '2.5px solid var(--accent)' : '2px solid var(--border)',
+                    padding: 2, background: 'transparent',
+                  }}
+                />
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>Custom</span>
+              </label>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Live preview */}
       <div>
@@ -1218,7 +1409,7 @@ function PinnedTab({ onSaved }) {
             fontSize: 10, fontWeight: 700, letterSpacing: 2,
             color: 'var(--accent)', marginBottom: 10, textTransform: 'uppercase',
           }}>
-            📌 Pinned
+            📌 {form.pinnedLabel || 'Pinned'}
           </div>
           <PinnedCardPreview pinned={form} />
           {!form.enabled && (
@@ -2186,7 +2377,7 @@ function PinnedCardPreview({ pinned }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14,
       padding: '16px 18px', borderRadius: 14,
-      background: 'linear-gradient(135deg, #141a0a 0%, #0f1208 100%)',
+      background: pinned.bgColor || 'linear-gradient(135deg, #141a0a 0%, #0f1208 100%)',
       border: '1px solid rgba(232,255,87,0.4)',
       boxShadow: '0 0 0 1px rgba(232,255,87,0.08), 0 8px 32px rgba(232,255,87,0.08)',
       opacity: pinned.enabled ? 1 : 0.45,
@@ -2549,6 +2740,57 @@ function SettingsTab({ onSaved }) {
       >
         {saving ? 'Saving...' : 'Save Settings'}
       </button>
+    </div>
+  )
+}
+
+// ─── ARRANGE TAB ─────────────────────────────────────────────────────────────
+
+const SECTION_LABELS = {
+  links:       '🔗 Links',
+  products:    '🛍️ Products',
+  pinned:      '📌 Pinned',
+  subscribers: '👥 Subscribers',
+  reviews:     '⭐ Reviews',
+}
+
+function ArrangeTab({ onSaved }) {
+  const { sectionOrder, save } = useSectionOrder()
+  const [order, setOrder] = useState(sectionOrder)
+  const sensors = useSensors(useSensor(PointerSensor))
+
+  useEffect(() => { setOrder(sectionOrder) }, [sectionOrder])
+
+  const onDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return
+    setOrder(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)))
+  }
+
+  const saveAll = async () => { await save(order); onSaved() }
+
+  return (
+    <div style={s.tabBody}>
+      <div style={s.tabInfo}>Drag to reorder how sections appear on your public page.</div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={order} strategy={verticalListSortingStrategy}>
+          {order.map(id => (
+            <SortableArrangeRow key={id} id={id} label={SECTION_LABELS[id] || id} />
+          ))}
+        </SortableContext>
+      </DndContext>
+      <SaveBtn onClick={saveAll} />
+    </div>
+  )
+}
+
+function SortableArrangeRow({ id, label }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+
+  return (
+    <div ref={setNodeRef} style={{ ...s.row, ...style }}>
+      <span {...attributes} {...listeners} style={s.drag}>⠿</span>
+      <div style={{ flex: 1, padding: '0 8px', fontWeight: 500 }}>{label}</div>
     </div>
   )
 }
