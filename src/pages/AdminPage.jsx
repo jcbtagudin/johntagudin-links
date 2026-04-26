@@ -139,21 +139,17 @@ export default function AdminPage() {
   const NAV_ITEMS = [
     { id: 'profile',     label: '👤 Profile' },
     { id: 'socials',     label: '📲 Socials' },
-    { id: 'links',       label: '🔗 Links' },
-    { id: 'products',    label: '🛍️ Products' },
-    { id: 'pinned',      label: '📌 Pinned' },
+    { id: 'page',        label: '📄 Page' },
     { id: 'subscribers', label: '👥 Subscribers' },
     { id: 'email',       label: '✉️ Email' },
     { id: 'analytics',   label: '📊 Analytics' },
     { id: 'reviews',     label: '⭐ Reviews' },
-    { id: 'layout',      label: '🔀 Arrange' },
   ]
 
   const TAB_TITLES = {
-    profile: 'Profile Settings', socials: 'Social Links', links: 'Link Sections',
-    products: 'Gumroad Products', pinned: 'Pinned Link', subscribers: 'Subscribers',
-    email: 'Welcome Email', analytics: 'Click Analytics', reviews: 'Reviews',
-    layout: 'Arrange Sections',
+    profile: 'Profile Settings', socials: 'Social Links', page: 'Page',
+    subscribers: 'Subscribers', email: 'Welcome Email',
+    analytics: 'Click Analytics', reviews: 'Reviews',
   }
 
   return (
@@ -232,14 +228,11 @@ export default function AdminPage() {
         <div style={{ ...s.content, ...(isMobile ? { padding: '0 16px 40px' } : {}) }}>
           {tab === 'profile'     && <ProfileTab profile={profile} update={updateProfile} onSaved={showSaved} />}
           {tab === 'socials'     && <SocialsTab data={linksData} save={saveLinks} onSaved={showSaved} />}
-          {tab === 'links'       && <LinksTab data={linksData} save={saveLinks} onSaved={showSaved} />}
-          {tab === 'products'    && <ProductsTab onSaved={showSaved} />}
-          {tab === 'pinned'      && <PinnedTab onSaved={showSaved} />}
+          {tab === 'page'        && <PageTab data={linksData} save={saveLinks} onSaved={showSaved} />}
           {tab === 'subscribers' && <SubscribersTab />}
           {tab === 'email'       && <EmailTab onSaved={showSaved} />}
           {tab === 'analytics'   && <AnalyticsTab />}
           {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
-          {tab === 'layout'      && <ArrangeTab onSaved={showSaved} />}
         </div>
       </main>
 
@@ -2740,6 +2733,54 @@ function SettingsTab({ onSaved }) {
       >
         {saving ? 'Saving...' : 'Save Settings'}
       </button>
+    </div>
+  )
+}
+
+// ─── PAGE TAB ────────────────────────────────────────────────────────────────
+
+function PageSection({ label, expanded, onToggle, children }) {
+  return (
+    <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 18px', background: expanded ? 'rgba(74,124,64,0.06)' : 'var(--surface)',
+          border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+          color: 'var(--text)', textAlign: 'left',
+        }}
+      >
+        <span>{label}</span>
+        <span style={{ color: 'var(--muted)', fontSize: 11, flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
+      </button>
+      {expanded && (
+        <div style={{ padding: '20px', borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PageTab({ data, save, onSaved }) {
+  const [expanded, setExpanded] = useState(null)
+  const toggle = (id) => setExpanded(v => v === id ? null : id)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 720 }}>
+      <PageSection label="📌 Pinned" expanded={expanded === 'pinned'} onToggle={() => toggle('pinned')}>
+        <PinnedTab onSaved={onSaved} />
+      </PageSection>
+      <PageSection label="🔗 Links" expanded={expanded === 'links'} onToggle={() => toggle('links')}>
+        <LinksTab data={data} save={save} onSaved={onSaved} />
+      </PageSection>
+      <PageSection label="🛍️ Products" expanded={expanded === 'products'} onToggle={() => toggle('products')}>
+        <ProductsTab onSaved={onSaved} />
+      </PageSection>
+      <PageSection label="🔀 Arrange Sections" expanded={expanded === 'arrange'} onToggle={() => toggle('arrange')}>
+        <ArrangeTab onSaved={onSaved} />
+      </PageSection>
     </div>
   )
 }
