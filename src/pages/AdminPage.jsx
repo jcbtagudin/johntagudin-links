@@ -98,7 +98,7 @@ export default function AdminPage() {
   const navigate = useNavigate()
   const { profile, update: updateProfile } = useProfile()
   const { data: linksData, save: saveLinks } = useLinks()
-  const [tab, setTab] = useState('profile')
+  const [tab, setTab] = useState('page')
   const [saved, setSaved] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
@@ -137,19 +137,16 @@ export default function AdminPage() {
   }
 
   const NAV_ITEMS = [
-    { id: 'profile',     label: '👤 Profile' },
-    { id: 'socials',     label: '📲 Socials' },
     { id: 'page',        label: '📄 Page' },
-    { id: 'subscribers', label: '👥 Subscribers' },
-    { id: 'email',       label: '✉️ Email' },
     { id: 'analytics',   label: '📊 Analytics' },
+    { id: 'newsletter',  label: '✉️ Newsletter' },
     { id: 'reviews',     label: '⭐ Reviews' },
+    { id: 'settings',    label: '⚙️ Settings' },
   ]
 
   const TAB_TITLES = {
-    profile: 'Profile Settings', socials: 'Social Links', page: 'Page',
-    subscribers: 'Subscribers', email: 'Welcome Email',
-    analytics: 'Click Analytics', reviews: 'Reviews',
+    page: 'Page Builder', analytics: 'Click Analytics',
+    newsletter: 'Newsletter', reviews: 'Reviews', settings: 'Settings',
   }
 
   return (
@@ -226,13 +223,11 @@ export default function AdminPage() {
         )}
 
         <div style={{ ...s.content, ...(isMobile ? { padding: '0 16px 40px' } : {}) }}>
-          {tab === 'profile'     && <ProfileTab profile={profile} update={updateProfile} onSaved={showSaved} />}
-          {tab === 'socials'     && <SocialsTab data={linksData} save={saveLinks} onSaved={showSaved} />}
-          {tab === 'page'        && <PageTab data={linksData} save={saveLinks} onSaved={showSaved} />}
-          {tab === 'subscribers' && <SubscribersTab />}
-          {tab === 'email'       && <EmailTab onSaved={showSaved} />}
+          {tab === 'page'        && <PageBuilderTab profile={profile} updateProfile={updateProfile} data={linksData} save={saveLinks} />}
           {tab === 'analytics'   && <AnalyticsTab />}
+          {tab === 'newsletter'  && <NewsletterTab />}
           {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
+          {tab === 'settings'    && <SettingsPageTab profile={profile} updateProfile={updateProfile} data={linksData} saveLinks={saveLinks} onSaved={showSaved} />}
         </div>
       </main>
 
@@ -410,93 +405,6 @@ function ProfileTab({ profile, update, onSaved }) {
         )}
       </div>
 
-      {/* ── Email Capture Section ── */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>EMAIL CAPTURE</div>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Show a newsletter signup card above your footer</div>
-          </div>
-          <button
-            onClick={() => set('showEmailCapture', !form.showEmailCapture)}
-            style={{
-              width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer',
-              background: form.showEmailCapture ? 'var(--accent)' : 'var(--surface2)',
-              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-            }}
-          >
-            <span style={{
-              position: 'absolute', top: 3,
-              left: form.showEmailCapture ? 20 : 3,
-              width: 16, height: 16, borderRadius: '50%',
-              background: form.showEmailCapture ? '#000' : 'var(--muted)',
-              transition: 'left 0.2s',
-            }} />
-          </button>
-        </div>
-
-        {form.showEmailCapture && (
-          <>
-            <Field
-              label="CAPTURE HEADLINE"
-              value={form.captureHeadline || ''}
-              onChange={v => set('captureHeadline', v)}
-              placeholder="For when you're too tired to figure this out yourself"
-            />
-            <Field
-              label="CAPTURE SUBTEXT"
-              value={form.captureSubtext || ''}
-              onChange={v => set('captureSubtext', v)}
-              multiline
-              placeholder="I share AI tools, shortcuts, and workflows that actually save time — only when I find something worth sharing. No spam. No schedule."
-            />
-            <Field
-              label="SOCIAL PROOF LINE"
-              value={form.captureProof || ''}
-              onChange={v => set('captureProof', v)}
-              placeholder="Joined by 500K+ creators"
-            />
-            <Field
-              label="BUTTON TEXT"
-              value={form.captureBtn || ''}
-              onChange={v => set('captureBtn', v)}
-              placeholder="I need this"
-            />
-          </>
-        )}
-      </div>
-
-      {/* ── Socials Position ── */}
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>SOCIALS POSITION</div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Where the social pills appear on your page</div>
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {['top', 'bottom'].map(pos => (
-            <button
-              key={pos}
-              onClick={() => set('socialsPosition', pos)}
-              style={{
-                ...s.iconBtn, padding: '6px 14px', fontSize: 12, borderRadius: 8,
-                border: '1px solid var(--border)',
-                background: (form.socialsPosition || 'top') === pos ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
-                color: (form.socialsPosition || 'top') === pos ? 'var(--accent)' : 'var(--text2)',
-                fontWeight: (form.socialsPosition || 'top') === pos ? 600 : 400,
-              }}
-            >
-              {pos === 'top' ? '↑ Top' : '↓ Bottom'}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ── Contact Button ── */}
       <div style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
@@ -606,11 +514,17 @@ function ProfileTab({ profile, update, onSaved }) {
 }
 
 // ─── SOCIALS TAB ─────────────────────────────────────────────────────────────
-function SocialsTab({ data, save, onSaved }) {
+function SocialsTab({ data, save, profile, updateProfile, onSaved }) {
   const [socials, setSocials] = useState(data.socials || [])
+  const [position, setPosition] = useState(profile?.socialsPosition || 'top')
   const sensors = useSensors(useSensor(PointerSensor))
 
-  const saveAll = async () => { await save({ ...data, socials }); onSaved() }
+  const saveAll = async () => {
+    const saves = [save({ ...data, socials })]
+    if (updateProfile) saves.push(updateProfile({ socialsPosition: position }))
+    await Promise.all(saves)
+    onSaved()
+  }
   const add = () => setSocials(s => [...s, { id: uid(), label: '', url: '', icon: 'website', visible: true }])
   const remove = (id) => setSocials(s => s.filter(x => x.id !== id))
   const update = (id, k, v) => setSocials(s => s.map(x => x.id === id ? { ...x, [k]: v } : x))
@@ -628,6 +542,32 @@ function SocialsTab({ data, save, onSaved }) {
 
   return (
     <div style={s.tabBody}>
+      {/* Position */}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 12, padding: '14px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', letterSpacing: 0.3 }}>POSITION</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Where the social pills appear on your page</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {['top', 'bottom'].map(pos => (
+            <button
+              key={pos}
+              onClick={() => setPosition(pos)}
+              style={{
+                ...s.iconBtn, padding: '6px 14px', fontSize: 12, borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: position === pos ? 'rgba(74,124,64,0.1)' : 'var(--surface2)',
+                color: position === pos ? 'var(--accent)' : 'var(--text2)',
+                fontWeight: position === pos ? 600 : 400,
+              }}
+            >{pos === 'top' ? '↑ Top' : '↓ Bottom'}</button>
+          ))}
+        </div>
+      </div>
       <div style={s.tabInfo}>Drag to reorder. Toggle visibility with the eye icon.</div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={socials.map(s => s.id)} strategy={verticalListSortingStrategy}>
@@ -1017,26 +957,32 @@ function SortableLinkRow({ link, onUpdate, onRemove, onMove, allSections, curren
 }
 
 // ─── PRODUCTS TAB ────────────────────────────────────────────────────────────
-function ProductsTab({ onSaved }) {
-  const { products, loading, save } = useProducts()
-  const [items, setItems] = useState(null)
-  const [layout, setLayout] = useState('rows')
-  const [title, setTitle] = useState('My Products')
+function ProductsTab({ onSaved, propData, propSave }) {
+  const { products, loading, save: firestoreSave } = useProducts()
+  const isExternal = !!propData
+
+  const [items, setItems] = useState(isExternal ? (propData.items || []) : null)
+  const [layout, setLayout] = useState(isExternal ? (propData.layout || 'rows') : 'rows')
+  const [title, setTitle] = useState(isExternal ? (propData.title || '') : 'My Products')
   const sensors = useSensors(useSensor(PointerSensor))
 
   React.useEffect(() => {
-    if (products && !items) {
+    if (!isExternal && products && !items) {
       setItems(products.items || [])
       setLayout(products.layout || 'rows')
       setTitle(products.title || 'My Products')
     }
-  }, [products])
+  }, [products]) // eslint-disable-line
 
-  if (loading || !items) return <Loader />
+  if (!isExternal && (loading || !items)) return <Loader />
 
   const saveAll = async () => {
-    await save({ items, layout, title })
-    onSaved()
+    if (isExternal) {
+      propSave?.({ items, layout, title })
+    } else {
+      await firestoreSave({ items, layout, title })
+      onSaved?.()
+    }
   }
 
   const add = () => setItems(prev => [...prev, {
@@ -1525,6 +1471,23 @@ function EmailTab({ onSaved }) {
       )}
 
       <SaveBtn onClick={handleSave} />
+    </div>
+  )
+}
+
+// ─── NEWSLETTER TAB ──────────────────────────────────────────────────────────
+function NewsletterTab() {
+  const [expanded, setExpanded] = useState('subscribers')
+  const toggle = (id) => setExpanded(v => v === id ? null : id)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 800 }}>
+      <PageSection label="👥 Subscribers" expanded={expanded === 'subscribers'} onToggle={() => toggle('subscribers')}>
+        <SubscribersTab />
+      </PageSection>
+      <PageSection label="✉️ Welcome Email" expanded={expanded === 'email'} onToggle={() => toggle('email')}>
+        <EmailTab onSaved={() => {}} />
+      </PageSection>
     </div>
   )
 }
@@ -2462,30 +2425,10 @@ function ReviewsTab({ profile, update, onSaved }) {
 
   const starStr = (n) => '★'.repeat(n) + '☆'.repeat(5 - n)
 
-  const toggleShowReviews = async () => {
-    await update({ showReviews: !profile.showReviews })
-    onSaved()
-  }
-
   return (
     <div style={s.tabBody}>
-      {/* Show/hide toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Show Reviews on Public Page</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Only approved reviews are visible to visitors.</div>
-        </div>
-        <button
-          onClick={toggleShowReviews}
-          style={{
-            padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: profile.showReviews ? 'var(--accent)' : 'var(--surface2)',
-            color: profile.showReviews ? '#fff' : 'var(--text2)',
-            fontWeight: 600, fontSize: 13,
-          }}
-        >
-          {profile.showReviews ? 'Visible' : 'Hidden'}
-        </button>
+      <div style={{ fontSize: 12, color: 'var(--muted)', padding: '4px 0 8px' }}>
+        Visibility is controlled from the Page Builder. Only approved reviews are shown to visitors.
       </div>
 
       {/* Sub-tab nav */}
@@ -2737,7 +2680,7 @@ function SettingsTab({ onSaved }) {
   )
 }
 
-// ─── PAGE TAB ────────────────────────────────────────────────────────────────
+// ─── PAGE BUILDER TAB ────────────────────────────────────────────────────────
 
 function PageSection({ label, expanded, onToggle, children }) {
   return (
@@ -2763,75 +2706,400 @@ function PageSection({ label, expanded, onToggle, children }) {
   )
 }
 
-function PageTab({ data, save, onSaved }) {
+const PAGE_SECTION_ICONS = {
+  pinned: '📌', products: '🛍️', links: '🔗', newsletter: '✉️', reviews: '⭐', custom: '📝',
+}
+const PAGE_SECTION_TYPE_LABELS = {
+  pinned: 'Pinned', products: 'Products', links: 'Links', newsletter: 'Newsletter', reviews: 'Reviews', custom: 'Custom',
+}
+
+function PageBuilderTab({ profile, updateProfile, data, save }) {
+  const { sections, loading, save: saveSections } = useSectionOrder()
+  const [local, setLocal] = useState([])
   const [expanded, setExpanded] = useState(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('idle') // 'idle' | 'saving' | 'saved'
+  const { requestConfirm, ConfirmModal } = useConfirm()
+  const sensors = useSensors(useSensor(PointerSensor))
+
+  // Track latest local in a ref so unmount-save always has the current value
+  const localRef = useRef([])
+  useEffect(() => { localRef.current = local }, [local])
+
+  // Init once from Firestore (wait for loading:false to avoid DEFAULT_SECTIONS flash)
+  const didInit = useRef(false)
+  const skipNextSave = useRef(false)
+  useEffect(() => {
+    if (!loading && !didInit.current) {
+      skipNextSave.current = true
+      setLocal(sections)
+      didInit.current = true
+    }
+  }, [loading, sections]) // eslint-disable-line
+
+  // Auto-save with debounce on every user-driven local change
+  useEffect(() => {
+    if (skipNextSave.current) { skipNextSave.current = false; return }
+    if (!didInit.current) return
+    setSaveStatus('saving')
+    const t = setTimeout(async () => {
+      await saveSections(local)
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+    }, 800)
+    return () => clearTimeout(t)
+  }, [local]) // eslint-disable-line
+
+  // Safety net: save immediately on tab switch / unmount (catches debounce cancellations)
+  useEffect(() => {
+    return () => {
+      if (didInit.current && localRef.current.length > 0) {
+        saveSections(localRef.current)
+      }
+    }
+  }, []) // eslint-disable-line
+
+  const onDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return
+    setLocal(prev => arrayMove(
+      prev,
+      prev.findIndex(s => s.id === active.id),
+      prev.findIndex(s => s.id === over.id),
+    ))
+  }
+
+  const toggleVisible = (id) => setLocal(prev => prev.map(s => s.id === id ? { ...s, visible: !s.visible } : s))
+
+  const deleteSection = (id, label) => {
+    requestConfirm(`Remove "${label}" from your page?`, () => {
+      setLocal(prev => prev.filter(s => s.id !== id))
+      if (expanded === id) setExpanded(null)
+    })
+  }
+
+  const addSection = (type) => {
+    const id = uid()
+    const blankData = {
+      links:    { sections: [] },
+      products: { items: [], layout: 'rows', title: '' },
+      custom:   { customTitle: '', customUrl: '', customIcon: '🔗', customSubtitle: '' },
+    }[type] || {}
+    setLocal(prev => [...prev, {
+      id, type, label: PAGE_SECTION_TYPE_LABELS[type] || type,
+      visible: true, isBuiltin: false, ...blankData,
+    }])
+    setAddOpen(false)
+    setExpanded(id)
+  }
+
+  // Singletons: only one of these can exist at a time
+  const existingTypes = new Set(local.map(s => s.type))
+  const SINGLETON_TYPES = new Set(['pinned', 'reviews'])
+  const ALL_ADDABLE = [
+    { type: 'links',      label: '🔗 Links Section',  desc: 'A group of link cards' },
+    { type: 'products',   label: '🛍️ Products',        desc: 'Showcase products or offers' },
+    { type: 'pinned',     label: '📌 Pinned',          desc: 'Featured pinned link card' },
+    { type: 'newsletter', label: '✉️ Newsletter',      desc: 'Email capture form' },
+    { type: 'reviews',    label: '⭐ Reviews',         desc: 'Social proof reviews' },
+    { type: 'custom',     label: '📝 Custom Block',    desc: 'Single link or CTA' },
+  ].filter(opt => !SINGLETON_TYPES.has(opt.type) || !existingTypes.has(opt.type))
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
+      {/* Top bar: Add Section + save status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          onClick={() => setAddOpen(true)}
+          style={{
+            flex: 1, padding: '10px 16px', border: '1px solid var(--accent)',
+            borderRadius: 10, background: 'rgba(74,124,64,0.08)', color: 'var(--accent)',
+            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}
+        >+ Add Section</button>
+        <div style={{
+          fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 6, flexShrink: 0,
+          color: saveStatus === 'saved' ? 'var(--green)' : 'var(--muted)',
+          background: saveStatus === 'saved' ? 'rgba(34,197,94,0.1)' : 'transparent',
+          transition: 'all 0.2s',
+        }}>
+          {saveStatus === 'saving' ? '⟳ Saving…' : saveStatus === 'saved' ? '✓ Saved' : ''}
+        </div>
+      </div>
+
+      <div style={s.tabInfo}>Drag to reorder. Toggle 👁 to show/hide. Expand to edit.</div>
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={local.map(s => s.id)} strategy={verticalListSortingStrategy}>
+          {local.map(section => (
+            <SortablePageRow
+              key={section.id}
+              section={section}
+              isExpanded={expanded === section.id}
+              onToggleExpand={() => setExpanded(v => v === section.id ? null : section.id)}
+              onToggleVisible={() => toggleVisible(section.id)}
+              onDelete={() => deleteSection(section.id, section.label)}
+              onUpdate={updatedSection => setLocal(prev => prev.map(s => s.id === updatedSection.id ? updatedSection : s))}
+              profile={profile}
+              updateProfile={updateProfile}
+              linksData={data}
+              saveLinks={save}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+
+      {/* Add Section modal */}
+      {addOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setAddOpen(false)}
+        >
+          <div
+            style={{
+              background: 'var(--surface)', borderRadius: 16, padding: '20px',
+              maxWidth: 340, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+              display: 'flex', flexDirection: 'column', gap: 8,
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Add Section</div>
+            {ALL_ADDABLE.map(opt => (
+              <button
+                key={opt.type}
+                onClick={() => addSection(opt.type)}
+                style={{
+                  width: '100%', padding: '12px 16px', background: 'var(--surface2)',
+                  border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer',
+                  textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 2,
+                }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{opt.label}</span>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>{opt.desc}</span>
+              </button>
+            ))}
+            <button
+              onClick={() => setAddOpen(false)}
+              style={{
+                marginTop: 4, padding: '10px', background: 'transparent', border: 'none',
+                cursor: 'pointer', fontSize: 12, color: 'var(--muted)',
+              }}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {ConfirmModal}
+    </div>
+  )
+}
+
+function SortablePageRow({ section, isExpanded, onToggleExpand, onToggleVisible, onDelete, onUpdate, profile, updateProfile, linksData, saveLinks }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
+  const dragStyle = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+  const icon = PAGE_SECTION_ICONS[section.type] || '📝'
+  const canDelete = section.isBuiltin ? !['pinned', 'reviews'].includes(section.type) : true
+  const canExpand = section.type !== 'reviews'
+
+  const renderEditor = () => {
+    if (section.isBuiltin) {
+      switch (section.type) {
+        case 'pinned':     return <PinnedTab onSaved={() => {}} />
+        case 'products':   return <ProductsTab onSaved={() => {}} />
+        case 'links':      return <LinksTab data={linksData} save={saveLinks} onSaved={() => {}} />
+        case 'newsletter': return <NewsletterEditor profile={profile} update={updateProfile} />
+        default:           return null
+      }
+    }
+    // Non-builtin: full editors wired to section-embedded data in parent state
+    switch (section.type) {
+      case 'links':
+        return (
+          <LinksTab
+            data={{ socials: [], sections: section.sections || [] }}
+            save={(newData) => onUpdate({ ...section, sections: newData.sections })}
+            onSaved={() => {}}
+          />
+        )
+      case 'products':
+        return (
+          <ProductsTab
+            propData={{ items: section.items || [], layout: section.layout || 'rows', title: section.title || '' }}
+            propSave={(newData) => onUpdate({ ...section, ...newData })}
+          />
+        )
+      case 'newsletter':
+        return <NewsletterEditor profile={profile} update={updateProfile} />
+      case 'pinned':
+        return <PinnedTab onSaved={() => {}} />
+      case 'custom':
+        return <CustomBlockEditor section={section} onChange={onUpdate} />
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div ref={setNodeRef} style={{ ...dragStyle, border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px',
+        background: isExpanded ? 'rgba(74,124,64,0.06)' : 'var(--surface)',
+      }}>
+        <span {...attributes} {...listeners} style={{ ...s.drag, cursor: 'grab' }}>⠿</span>
+        <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+        <div style={{ flex: 1, fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{section.label}</div>
+        <button
+          onClick={onToggleVisible}
+          title={section.visible ? 'Hide section' : 'Show section'}
+          style={{
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            fontSize: 15, padding: '4px', borderRadius: 6, lineHeight: 1,
+            opacity: section.visible ? 1 : 0.4,
+          }}
+        >{section.visible ? '👁' : '🙈'}</button>
+        {canExpand && (
+          <button
+            onClick={onToggleExpand}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--muted)', fontSize: 11, padding: '4px 8px', borderRadius: 6,
+            }}
+          >{isExpanded ? '▲' : '▼'}</button>
+        )}
+        {canDelete && (
+          <button
+            onClick={onDelete}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--muted)', fontSize: 14, padding: '4px 6px', borderRadius: 6, lineHeight: 1,
+            }}
+          >✕</button>
+        )}
+      </div>
+      {isExpanded && canExpand && (
+        <div style={{ padding: 20, borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
+          {renderEditor()}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NewsletterEditor({ profile, update }) {
+  const [form, setForm] = useState({
+    showEmailCapture: profile?.showEmailCapture || false,
+    captureHeadline:  profile?.captureHeadline  || '',
+    captureSubtext:   profile?.captureSubtext   || '',
+    captureProof:     profile?.captureProof     || '',
+    captureBtn:       profile?.captureBtn       || '',
+  })
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const saveAll = async () => {
+    setSaving(true)
+    await update(form)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Show email signup form</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>Display a newsletter capture card on your public page.</div>
+        </div>
+        <button
+          onClick={() => set('showEmailCapture', !form.showEmailCapture)}
+          style={{
+            width: 40, height: 22, borderRadius: 100, border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 16,
+            background: form.showEmailCapture ? 'var(--accent)' : 'var(--surface2)',
+            position: 'relative', transition: 'background 0.2s',
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: 3, left: form.showEmailCapture ? 20 : 3,
+            width: 16, height: 16, borderRadius: '50%',
+            background: form.showEmailCapture ? '#000' : 'var(--muted)', transition: 'left 0.2s',
+          }} />
+        </button>
+      </div>
+
+      {form.showEmailCapture && (
+        <>
+          <Field label="CAPTURE HEADLINE" value={form.captureHeadline} onChange={v => set('captureHeadline', v)} placeholder="For when you're too tired to figure this out yourself" />
+          <Field label="CAPTURE SUBTEXT" value={form.captureSubtext} onChange={v => set('captureSubtext', v)} multiline placeholder="I share AI tools, shortcuts, and workflows that actually save time..." />
+          <Field label="SOCIAL PROOF LINE" value={form.captureProof} onChange={v => set('captureProof', v)} placeholder="Joined by 500K+ creators" />
+          <Field label="BUTTON TEXT" value={form.captureBtn} onChange={v => set('captureBtn', v)} placeholder="I need this" />
+        </>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          onClick={saveAll}
+          disabled={saving}
+          style={{
+            ...s.saveBtn, opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' : 'pointer',
+          }}
+        >{saving ? 'Saving…' : 'Save Changes'}</button>
+        {saved && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>✓ Saved</span>}
+      </div>
+
+      <div style={{ fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>
+        Welcome email template → Newsletter → Welcome Email
+      </div>
+    </div>
+  )
+}
+
+// ─── INLINE SECTION EDITORS ──────────────────────────────────────────────────
+
+function CustomBlockEditor({ section, onChange }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ ...s.field, width: 72, flexShrink: 0 }}>
+          <label style={s.label}>ICON</label>
+          <input style={s.input} placeholder="🔗" value={section.customIcon || ''} onChange={e => onChange({ ...section, customIcon: e.target.value })} />
+        </div>
+        <div style={{ ...s.field, flex: 1 }}>
+          <label style={s.label}>TITLE</label>
+          <input style={s.input} placeholder="Link title" value={section.customTitle || ''} onChange={e => onChange({ ...section, customTitle: e.target.value })} />
+        </div>
+      </div>
+      <div style={s.field}>
+        <label style={s.label}>SUBTITLE</label>
+        <input style={s.input} placeholder="Short description (optional)" value={section.customSubtitle || ''} onChange={e => onChange({ ...section, customSubtitle: e.target.value })} />
+      </div>
+      <div style={s.field}>
+        <label style={s.label}>URL</label>
+        <input style={s.input} placeholder="https://..." value={section.customUrl || ''} onChange={e => onChange({ ...section, customUrl: e.target.value })} />
+      </div>
+    </div>
+  )
+}
+
+// ─── SETTINGS PAGE TAB ───────────────────────────────────────────────────────
+
+function SettingsPageTab({ profile, updateProfile, data, saveLinks, onSaved }) {
+  const [expanded, setExpanded] = useState('profile')
   const toggle = (id) => setExpanded(v => v === id ? null : id)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 720 }}>
-      <PageSection label="📌 Pinned" expanded={expanded === 'pinned'} onToggle={() => toggle('pinned')}>
-        <PinnedTab onSaved={onSaved} />
+      <PageSection label="👤 Profile & Bio" expanded={expanded === 'profile'} onToggle={() => toggle('profile')}>
+        <ProfileTab profile={profile} update={updateProfile} onSaved={onSaved} />
       </PageSection>
-      <PageSection label="🔗 Links" expanded={expanded === 'links'} onToggle={() => toggle('links')}>
-        <LinksTab data={data} save={save} onSaved={onSaved} />
+      <PageSection label="📲 Social Links" expanded={expanded === 'socials'} onToggle={() => toggle('socials')}>
+        <SocialsTab data={data} save={saveLinks} profile={profile} updateProfile={updateProfile} onSaved={onSaved} />
       </PageSection>
-      <PageSection label="🛍️ Products" expanded={expanded === 'products'} onToggle={() => toggle('products')}>
-        <ProductsTab onSaved={onSaved} />
-      </PageSection>
-      <PageSection label="🔀 Arrange Sections" expanded={expanded === 'arrange'} onToggle={() => toggle('arrange')}>
-        <ArrangeTab onSaved={onSaved} />
-      </PageSection>
-    </div>
-  )
-}
-
-// ─── ARRANGE TAB ─────────────────────────────────────────────────────────────
-
-const SECTION_LABELS = {
-  links:       '🔗 Links',
-  products:    '🛍️ Products',
-  pinned:      '📌 Pinned',
-  subscribers: '👥 Subscribers',
-  reviews:     '⭐ Reviews',
-}
-
-function ArrangeTab({ onSaved }) {
-  const { sectionOrder, save } = useSectionOrder()
-  const [order, setOrder] = useState(sectionOrder)
-  const sensors = useSensors(useSensor(PointerSensor))
-
-  useEffect(() => { setOrder(sectionOrder) }, [sectionOrder])
-
-  const onDragEnd = ({ active, over }) => {
-    if (!over || active.id === over.id) return
-    setOrder(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)))
-  }
-
-  const saveAll = async () => { await save(order); onSaved() }
-
-  return (
-    <div style={s.tabBody}>
-      <div style={s.tabInfo}>Drag to reorder how sections appear on your public page.</div>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          {order.map(id => (
-            <SortableArrangeRow key={id} id={id} label={SECTION_LABELS[id] || id} />
-          ))}
-        </SortableContext>
-      </DndContext>
-      <SaveBtn onClick={saveAll} />
-    </div>
-  )
-}
-
-function SortableArrangeRow({ id, label }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
-
-  return (
-    <div ref={setNodeRef} style={{ ...s.row, ...style }}>
-      <span {...attributes} {...listeners} style={s.drag}>⠿</span>
-      <div style={{ flex: 1, padding: '0 8px', fontWeight: 500 }}>{label}</div>
     </div>
   )
 }

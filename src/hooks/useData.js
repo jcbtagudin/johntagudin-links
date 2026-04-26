@@ -454,24 +454,57 @@ export function useSettings() {
 
 // ─── SECTION ORDER ────────────────────────────────────────────────────────────
 
-const DEFAULT_SECTION_ORDER = ['links', 'products', 'pinned', 'subscribers', 'reviews']
+export const DEFAULT_SECTIONS = [
+  { id: 'pinned',     type: 'pinned',     label: 'Pinned',     visible: true, isBuiltin: true },
+  { id: 'products',   type: 'products',   label: 'Products',   visible: true, isBuiltin: true },
+  { id: 'links',      type: 'links',      label: 'Links',      visible: true, isBuiltin: true },
+  { id: 'newsletter', type: 'newsletter', label: 'Newsletter', visible: true, isBuiltin: true },
+  { id: 'reviews',    type: 'reviews',    label: 'Reviews',    visible: true, isBuiltin: true },
+]
+
+const BUILTIN_TYPES = new Set(['links', 'products', 'pinned', 'newsletter', 'reviews', 'subscribers'])
+
+const SECTION_LABEL_MAP = {
+  links: 'Links', products: 'Products', pinned: 'Pinned',
+  subscribers: 'Newsletter', newsletter: 'Newsletter', reviews: 'Reviews',
+}
+
+function migrateSections(data) {
+  if (Array.isArray(data.sections) && data.sections.length > 0) {
+    // Backfill isBuiltin for sections that don't have it yet
+    return data.sections.map(s => ({
+      isBuiltin: BUILTIN_TYPES.has(s.type),
+      ...s,
+    }))
+  }
+  if (Array.isArray(data.sectionOrder)) {
+    return data.sectionOrder.map(id => ({
+      id:       id === 'subscribers' ? 'newsletter' : id,
+      type:     id === 'subscribers' ? 'newsletter' : id,
+      label:    SECTION_LABEL_MAP[id] || id,
+      visible:  true,
+      isBuiltin: true,
+    }))
+  }
+  return DEFAULT_SECTIONS
+}
 
 export function useSectionOrder() {
-  const [sectionOrder, setSectionOrder] = useState(DEFAULT_SECTION_ORDER)
+  const [sections, setSections] = useState(DEFAULT_SECTIONS)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const ref = doc(db, 'config', 'layout')
     const unsub = onSnapshot(ref, snap => {
-      if (snap.exists()) setSectionOrder(snap.data().sectionOrder || DEFAULT_SECTION_ORDER)
+      if (snap.exists()) setSections(migrateSections(snap.data()))
       setLoading(false)
     })
     return unsub
   }, [])
 
-  const save = async (order) => {
-    await setDoc(doc(db, 'config', 'layout'), { sectionOrder: order })
+  const save = async (sections) => {
+    await setDoc(doc(db, 'config', 'layout'), { sections })
   }
 
-  return { sectionOrder, loading, save }
+  return { sections, loading, save }
 }
