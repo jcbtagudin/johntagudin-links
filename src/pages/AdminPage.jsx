@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, storage } from '../lib/firebase'
 import { useNavigate } from 'react-router-dom'
-import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews, useSettings, removeSubscriber } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, useAnalytics, useSubscribers, useEmailConfig, useAdminReviews, useSettings, useSectionOrder, removeSubscriber } from '../hooks/useData'
 import { useAuth } from '../hooks/useAuth'
 import SocialIcon, { SOCIAL_ICON_OPTIONS } from '../components/SocialIcon'
 import {
@@ -146,13 +146,14 @@ export default function AdminPage() {
     { id: 'analytics',   label: '📊 Analytics' },
     { id: 'reviews',     label: '⭐ Reviews' },
     { id: 'settings',    label: '⚙️ Settings' },
+    { id: 'layout',      label: '🔀 Arrange' },
   ]
 
   const TAB_TITLES = {
     profile: 'Profile Settings', socials: 'Social Links', links: 'Link Sections',
     products: 'Gumroad Products', pinned: 'Pinned Link', subscribers: 'Subscribers',
     email: 'Welcome Email', analytics: 'Click Analytics', reviews: 'Reviews',
-    settings: 'Settings',
+    settings: 'Settings', layout: 'Arrange Sections',
   }
 
   return (
@@ -239,6 +240,7 @@ export default function AdminPage() {
           {tab === 'analytics'   && <AnalyticsTab />}
           {tab === 'reviews'     && <ReviewsTab profile={profile} update={updateProfile} onSaved={showSaved} />}
           {tab === 'settings'    && <SettingsTab onSaved={showSaved} />}
+          {tab === 'layout'      && <ArrangeTab onSaved={showSaved} />}
         </div>
       </main>
     </div>
@@ -2549,6 +2551,58 @@ function SettingsTab({ onSaved }) {
       >
         {saving ? 'Saving...' : 'Save Settings'}
       </button>
+    </div>
+  )
+}
+
+// ─── ARRANGE TAB ─────────────────────────────────────────────────────────────
+
+const SECTION_LABELS = {
+  products:     '🛍️ Products',
+  email_signup: '✉️ Email Signup',
+  brand_deal:   '🤝 Brand Deal',
+  tools:        '🔧 Tools',
+  featured:     '⭐ Featured',
+  latest_video: '▶️ Latest Video',
+}
+
+function ArrangeTab({ onSaved }) {
+  const { sectionOrder, save } = useSectionOrder()
+  const [order, setOrder] = useState(sectionOrder)
+  const sensors = useSensors(useSensor(PointerSensor))
+
+  useEffect(() => { setOrder(sectionOrder) }, [sectionOrder])
+
+  const onDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return
+    setOrder(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)))
+  }
+
+  const saveAll = async () => { await save(order); onSaved() }
+
+  return (
+    <div style={s.tabBody}>
+      <div style={s.tabInfo}>Drag to reorder how sections appear on your public page.</div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={order} strategy={verticalListSortingStrategy}>
+          {order.map(id => (
+            <SortableSectionRow key={id} id={id} label={SECTION_LABELS[id] || id} />
+          ))}
+        </SortableContext>
+      </DndContext>
+      <SaveBtn onClick={saveAll} />
+    </div>
+  )
+}
+
+function SortableSectionRow({ id, label }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+
+  return (
+    <div ref={setNodeRef} style={{ ...s.row, ...style }}>
+      <span {...attributes} {...listeners} style={s.drag}>⠿</span>
+      <div style={{ flex: 1, padding: '0 8px', fontWeight: 500 }}>{label}</div>
     </div>
   )
 }

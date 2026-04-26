@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView, useApprovedReviews, submitReview } from '../hooks/useData'
+import { useProfile, useLinks, usePinned, useProducts, logClick, logPageView, useApprovedReviews, submitReview, useSectionOrder } from '../hooks/useData'
 import SocialIcon from '../components/SocialIcon'
 import styles from './PublicPage.module.css'
+
+const DEFAULT_SECTION_ORDER = ['products', 'email_signup', 'brand_deal', 'tools', 'featured', 'latest_video']
 
 const BADGE_MAP = {
   free: { label: 'Free', cls: 'badgeFree' },
@@ -79,6 +81,7 @@ export default function PublicPage() {
   const { data, loading: ll } = useLinks()
   const { pinned, loading: pinnedLoading } = usePinned()
   const { products, loading: productsLoading } = useProducts()
+  const { sectionOrder } = useSectionOrder()
   const cursorActive = useCursorHint()
   const meta = useVisitorMeta()
 
@@ -103,6 +106,66 @@ export default function PublicPage() {
       ))}
     </div>
   ) : null
+
+  const renderSection = (id) => {
+    switch (id) {
+      case 'products':
+        return <ProductsSection key="products" products={products} styles={styles} />
+      case 'email_signup':
+        if (profile.showEmailCapture !== true) return null
+        return <EmailCaptureCard key="email_signup" profile={profile} />
+      case 'latest_video':
+        if (profile.showLatestVideo === false || profile.latestVideoPosition !== 'bottom') return null
+        return <LatestVideoCard key="latest_video" inlinePreview={!!profile.latestVideoInline} />
+      default: {
+        const section = data.sections?.find(s => s.id === id)
+        if (!section || !section.visible) return null
+        const visibleLinks = section.links?.filter(l => l.visible && isLinkLive(l)) || []
+        if (!visibleLinks.length) return null
+        return (
+          <div key={id} className={styles.section}>
+            <div className={styles.sectionLabel}>{section.label}</div>
+            <div className={styles.linksStack}>
+              {visibleLinks.map(link => {
+                const badge = BADGE_MAP[link.badge]
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener"
+                    className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
+                    onClick={() => logClick(link.id, link.title, section.id, meta)}
+                  >
+                    {link.thumbnail && (
+                      <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
+                    )}
+                    <div className={styles.cardRow}>
+                      <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
+                        {link.iconImage
+                          ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                          : link.icon}
+                      </div>
+                      <div className={styles.cardText}>
+                        <div className={styles.cardTitle}>{link.title}</div>
+                        <div className={styles.cardSub}>{link.subtitle}</div>
+                      </div>
+                      {badge && (
+                        <span className={`${styles.badge} ${styles[badge.cls]}`}>
+                          {badge.label}
+                        </span>
+                      )}
+                      <Arrow />
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          </div>
+        )
+      }
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -203,65 +266,8 @@ export default function PublicPage() {
           </div>
         )}
 
-        {/* PRODUCTS */}
-        <ProductsSection products={products} styles={styles} />
-
-        {/* SECTIONS */}
-        {visibleSections.map(section => {
-          const visibleLinks = section.links?.filter(l => l.visible && isLinkLive(l)) || []
-          if (!visibleLinks.length) return null
-          return (
-            <div key={section.id} className={styles.section}>
-              <div className={styles.sectionLabel}>{section.label}</div>
-              <div className={styles.linksStack}>
-                {visibleLinks.map(link => {
-                  const badge = BADGE_MAP[link.badge]
-                  return (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener"
-                      className={`${styles.card} ${link.featured ? styles.featured : ''} ${link.thumbnail ? styles.cardWithThumb : ''}`}
-                      onClick={() => logClick(link.id, link.title, section.id, meta)}
-                    >
-                      {link.thumbnail && (
-                        <img src={link.thumbnail} alt="" className={styles.cardThumb} onError={e => e.currentTarget.style.display = 'none'} />
-                      )}
-                      <div className={styles.cardRow}>
-                        <div className={`${styles.icon} ${link.featured ? styles.iconAccent : ''} ${link.iconImage ? styles.iconImg : ''}`}>
-                          {link.iconImage
-                            ? <img src={link.iconImage} alt="" onError={e => e.currentTarget.style.display = 'none'} />
-                            : link.icon}
-                        </div>
-                        <div className={styles.cardText}>
-                          <div className={styles.cardTitle}>{link.title}</div>
-                          <div className={styles.cardSub}>{link.subtitle}</div>
-                        </div>
-                        {badge && (
-                          <span className={`${styles.badge} ${styles[badge.cls]}`}>
-                            {badge.label}
-                          </span>
-                        )}
-                        <Arrow />
-                      </div>
-                    </a>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-
-        {/* LATEST VIDEO — bottom position */}
-        {profile.showLatestVideo !== false && profile.latestVideoPosition === 'bottom' && (
-          <LatestVideoCard inlinePreview={!!profile.latestVideoInline} />
-        )}
-
-        {/* EMAIL CAPTURE */}
-        {profile.showEmailCapture === true && (
-          <EmailCaptureCard profile={profile} />
-        )}
+        {/* ORDERABLE SECTIONS */}
+        {(sectionOrder || DEFAULT_SECTION_ORDER).map(id => renderSection(id))}
 
         {/* SOCIALS — bottom position */}
         {socialsBottom && SocialsBar}
