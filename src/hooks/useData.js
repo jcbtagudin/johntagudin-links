@@ -102,6 +102,8 @@ const DEFAULT_PINNED = {
   url: '',
   badge: '',
   thumbnailUrl: '',
+  bgColor: '',
+  pinnedLabel: '',
 }
 
 export function usePinned() {

@@ -1268,6 +1268,55 @@ function PinnedTab({ onSaved }) {
       <Field label="URL" value={form.url} onChange={v => set('url', v)} placeholder="https://..." />
       <ImageUploadField label="THUMBNAIL IMAGE" value={form.thumbnailUrl || ''} onChange={v => set('thumbnailUrl', v)} path="pinned" placeholder="https://... or upload" />
 
+      {/* Label text */}
+      <Field label='LABEL TEXT (shown above card, default "Pinned")' value={form.pinnedLabel || ''} onChange={v => set('pinnedLabel', v)} placeholder="Pinned" />
+
+      {/* Card background color */}
+      {(() => {
+        const PINNED_COLORS = [
+          { label: 'Deep Black',    value: '#1A1A1A' },
+          { label: 'Midnight Navy', value: '#0D1B2A' },
+          { label: 'Deep Purple',   value: '#1A0A2E' },
+          { label: 'Forest Dark',   value: '#0A1F12' },
+          { label: 'Deep Crimson',  value: '#1F0A0A' },
+        ]
+        const isPreset = PINNED_COLORS.some(c => c.value === form.bgColor)
+        const activeColor = form.bgColor || '#1A1A1A'
+        return (
+          <div style={s.field}>
+            <label style={s.label}>CARD BACKGROUND</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {PINNED_COLORS.map(c => (
+                <button
+                  key={c.value}
+                  title={c.label}
+                  onClick={() => set('bgColor', c.value)}
+                  style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: c.value, cursor: 'pointer', flexShrink: 0,
+                    border: activeColor === c.value ? '2.5px solid var(--accent)' : '2px solid var(--border)',
+                    transition: 'border-color 0.15s',
+                  }}
+                />
+              ))}
+              <label title="Custom color" style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <input
+                  type="color"
+                  value={isPreset || !form.bgColor ? '#1A1A1A' : form.bgColor}
+                  onChange={e => set('bgColor', e.target.value)}
+                  style={{
+                    width: 36, height: 36, borderRadius: 10, cursor: 'pointer',
+                    border: !isPreset && form.bgColor ? '2.5px solid var(--accent)' : '2px solid var(--border)',
+                    padding: 2, background: 'transparent',
+                  }}
+                />
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>Custom</span>
+              </label>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Live preview */}
       <div>
         <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', letterSpacing: 0.3, marginBottom: 10 }}>
@@ -1281,7 +1330,7 @@ function PinnedTab({ onSaved }) {
             fontSize: 10, fontWeight: 700, letterSpacing: 2,
             color: 'var(--accent)', marginBottom: 10, textTransform: 'uppercase',
           }}>
-            📌 Pinned
+            📌 {form.pinnedLabel || 'Pinned'}
           </div>
           <PinnedCardPreview pinned={form} />
           {!form.enabled && (
@@ -2249,7 +2298,7 @@ function PinnedCardPreview({ pinned }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14,
       padding: '16px 18px', borderRadius: 14,
-      background: 'linear-gradient(135deg, #141a0a 0%, #0f1208 100%)',
+      background: pinned.bgColor || 'linear-gradient(135deg, #141a0a 0%, #0f1208 100%)',
       border: '1px solid rgba(232,255,87,0.4)',
       boxShadow: '0 0 0 1px rgba(232,255,87,0.08), 0 8px 32px rgba(232,255,87,0.08)',
       opacity: pinned.enabled ? 1 : 0.45,
